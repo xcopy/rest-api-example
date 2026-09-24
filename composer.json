@@ -1,0 +1,23 @@
+{
+    "name": "xcopy/rest-api-example",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Kairat Jenishev",
+            "email": "kairat.jenishev@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "slim/slim": "^4.15",
+        "slim/psr7": "^1.8",
+        "robmorgan/phinx": "^0.16.12",
+        "laminas/laminas-db": "^2.22",
+        "php-di/php-di": "^7.1",
+        "fzaninotto/faker": "^1.5"
+    },
+    "require-dev": {
+        "symfony/var-dumper": "^7.4",
+        "friendsofphp/php-cs-fixer": "^3.95"
+    }
+}
