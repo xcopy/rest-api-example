@@ -6,6 +6,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use DI\Container;
 use Laminas\Db\Adapter\Adapter;
+use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Sql;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -44,9 +45,35 @@ $app->add(function (Request $request, Handler $handler) {
 $app->get('/users', function (Request $request, Response $response) {
     $sql = new Sql($this->get('db'));
 
+    $queryParams = $request->getQueryParams();
+
+    $page = isset($queryParams['page']) ? max(1, (int) $queryParams['page']) : 1;
+    $perPage = isset($queryParams['per_page']) ? max(1, min(20, (int) $queryParams['per_page'])) : 20;
+
+    $countSelect = $sql
+        ->select('users')
+        ->columns(['total' => new Expression('COUNT(*)')]);
+    $countStatement = $sql->prepareStatementForSqlObject($countSelect);
+    $countResult = $countStatement->execute()->current();
+
+    $totalCount = (int) ($countResult['total'] ?? 0);
+    $totalPages = (int) ceil($totalCount / $perPage);
+
+    $page = min($page, $totalPages > 0 ? $totalPages : 1);
+    $offset = ($page - 1) * $perPage;
+
+    $response = $response
+        ->withHeader('Access-Control-Expose-Headers', 'X-Pagination-Total-Count, X-Pagination-Total-Pages, X-Pagination-Current-Page, X-Pagination-Per-Page')
+        ->withHeader('X-Pagination-Total-Count', (string) $totalCount)
+        ->withHeader('X-Pagination-Total-Pages', (string) $totalPages)
+        ->withHeader('X-Pagination-Current-Page', (string) $page)
+        ->withHeader('X-Pagination-Per-Page', (string) $perPage);
+
     $select = $sql
         ->select('users')
         ->columns(['id', 'email', 'first_name', 'last_name'])
+        ->limit($perPage)
+        ->offset($offset)
         ->order('id DESC');
 
     $statement = $sql->prepareStatementForSqlObject($select);
