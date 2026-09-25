@@ -14,7 +14,9 @@
         "robmorgan/phinx": "^0.16.12",
         "laminas/laminas-db": "^2.22",
         "php-di/php-di": "^7.1",
-        "fzaninotto/faker": "^1.5"
+        "fzaninotto/faker": "^1.5",
+        "beberlei/assert": "^3.3",
+        "middlewares/trailing-slash": "^2.1"
     },
     "require-dev": {
         "symfony/var-dumper": "^7.4",

@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use Assert\Assertion;
 use DI\Container;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Sql;
+use Middlewares\TrailingSlash;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\RequestHandlerInterface as Handler;
 use Slim\Exception\HttpNotFoundException;
 use Slim\Factory\AppFactory;
+use Slim\Middleware\ContentLengthMiddleware;
 
 $container = new Container();
 
@@ -31,6 +34,8 @@ AppFactory::setContainer($container);
 
 $app = AppFactory::create();
 $app->addRoutingMiddleware();
+$app->add(new TrailingSlash(false));
+$app->add(new ContentLengthMiddleware());
 
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 $errorHandler = $errorMiddleware->getDefaultErrorHandler();
@@ -86,6 +91,8 @@ $app->get('/users', function (Request $request, Response $response) {
 });
 
 $app->get('/users/{id}', function (Request $request, Response $response, array $args) {
+    Assertion::integerish($args['id']);
+
     $sql = new Sql($this->get('db'));
 
     $select = $sql
