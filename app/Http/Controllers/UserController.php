@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Exception\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
+use Assert\Assert;
 use Assert\Assertion;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Expression;
@@ -10,6 +12,7 @@ use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Sql;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Exception\HttpBadRequestException;
 use Slim\Exception\HttpNotFoundException;
 
 class UserController
@@ -71,7 +74,11 @@ class UserController
 
     public function show(Request $request, Response $response, array $args): Response
     {
-        Assertion::integerish($args['id']);
+        try {
+            Assertion::integerish($args['id']);
+        } catch (\Throwable $e) {
+            throw new HttpBadRequestException($request, $e->getMessage());
+        }
 
         $select = (clone $this->baseSelect)
             ->where(['id' => $args['id']]);
@@ -87,5 +94,54 @@ class UserController
         $data = $results->current();
 
         return JsonResponse::write($response, $data);
+    }
+
+    public function create(Request $request, Response $response): Response
+    {
+        $data = $request->getParsedBody() ?? [];
+
+        try {
+            Assert::that($data)
+                ->keyExists('email')
+                ->keyExists('password')
+                ->keyExists('first_name')
+                ->keyExists('last_name');
+
+            Assertion::email($data['email']);
+            Assertion::minLength($data['password'], 8);
+
+            Assert::that($data['first_name'])
+                ->notBlank()
+                ->string();
+
+            Assert::that($data['last_name'])
+                ->notBlank()
+                ->string();
+        } catch (\Throwable $e) {
+            throw new HttpUnprocessableEntityException($request, $e->getMessage());
+        }
+
+        $insert = $this->sql
+            ->insert('users')
+            ->values([
+                'email' => $data['email'],
+                'password' => password_hash($data['password'], PASSWORD_DEFAULT),
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+            ]);
+
+        $result = $this->sql
+            ->prepareStatementForSqlObject($insert)
+            ->execute();
+
+        $select = (clone $this->baseSelect)
+            ->where(['id' => $result->getGeneratedValue()]);
+
+        $user = $this->sql
+            ->prepareStatementForSqlObject($select)
+            ->execute()
+            ->current();
+
+        return JsonResponse::write($response, $user, 201);
     }
 }

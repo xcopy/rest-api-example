@@ -39,10 +39,12 @@ $app->add(new TrailingSlash(false));
 $app->add(new ContentLengthMiddleware());
 $app->add(new JsonResponseMiddleware());
 $app->addErrorMiddleware(true, true, true);
+$app->addBodyParsingMiddleware();
 
 $app->group('/users', function (RouteCollectorProxy $group) {
     $group->get('', [UserController::class, 'index']);
     $group->get('/{id}', [UserController::class, 'show']);
+    $group->post('', [UserController::class, 'create']);
 });
 
 $app->run();
