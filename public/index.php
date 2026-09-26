@@ -17,6 +17,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpNotFoundException;
 use Slim\Factory\AppFactory;
 use Slim\Middleware\ContentLengthMiddleware;
+use Slim\Routing\RouteCollectorProxy;
 
 $container = new Container();
 
@@ -41,70 +42,68 @@ $app->add(new ContentLengthMiddleware());
 $app->add(new JsonResponseMiddleware());
 $app->addErrorMiddleware(true, true, true);
 
-$app->get('/users', function (Request $request, Response $response) {
+$app->group('/users', function (RouteCollectorProxy $group) {
     $sql = new Sql($this->get('db'));
 
-    $queryParams = $request->getQueryParams();
+    $baseSelect = $sql->select('users')
+        ->columns(['id', 'email', 'first_name', 'last_name']);
 
-    $page = isset($queryParams['page']) ? max(1, (int) $queryParams['page']) : 1;
-    $perPage = isset($queryParams['per_page']) ? max(1, min(20, (int) $queryParams['per_page'])) : 20;
+    $group->get('', function (Request $request, Response $response) use ($sql, $baseSelect) {
+        $queryParams = $request->getQueryParams();
 
-    $countSelect = $sql
-        ->select('users')
-        ->columns(['total' => new Expression('COUNT(*)')]);
-    $countStatement = $sql->prepareStatementForSqlObject($countSelect);
-    $countResult = $countStatement->execute()->current();
+        $page = isset($queryParams['page']) ? max(1, (int) $queryParams['page']) : 1;
+        $perPage = isset($queryParams['per_page']) ? max(1, min(20, (int) $queryParams['per_page'])) : 20;
 
-    $totalCount = (int) ($countResult['total'] ?? 0);
-    $totalPages = (int) ceil($totalCount / $perPage);
+        $countSelect = (clone $baseSelect)
+            ->columns(['total' => new Expression('COUNT(*)')]); // will override base columns
+        $countStatement = $sql->prepareStatementForSqlObject($countSelect);
+        $countResult = $countStatement->execute()->current();
 
-    $page = min($page, $totalPages > 0 ? $totalPages : 1);
-    $offset = ($page - 1) * $perPage;
+        $totalCount = (int) ($countResult['total'] ?? 0);
+        $totalPages = (int) ceil($totalCount / $perPage);
 
-    $response = $response
-        ->withHeader('Access-Control-Expose-Headers', 'X-Pagination-Total-Count, X-Pagination-Total-Pages, X-Pagination-Current-Page, X-Pagination-Per-Page')
-        ->withHeader('X-Pagination-Total-Count', (string) $totalCount)
-        ->withHeader('X-Pagination-Total-Pages', (string) $totalPages)
-        ->withHeader('X-Pagination-Current-Page', (string) $page)
-        ->withHeader('X-Pagination-Per-Page', (string) $perPage);
+        $page = min($page, $totalPages > 0 ? $totalPages : 1);
+        $offset = ($page - 1) * $perPage;
 
-    $select = $sql
-        ->select('users')
-        ->columns(['id', 'email', 'first_name', 'last_name'])
-        ->limit($perPage)
-        ->offset($offset)
-        ->order('id DESC');
+        $response = $response
+            ->withHeader('Access-Control-Expose-Headers', 'X-Pagination-Total-Count, X-Pagination-Total-Pages, X-Pagination-Current-Page, X-Pagination-Per-Page')
+            ->withHeader('X-Pagination-Total-Count', (string) $totalCount)
+            ->withHeader('X-Pagination-Total-Pages', (string) $totalPages)
+            ->withHeader('X-Pagination-Current-Page', (string) $page)
+            ->withHeader('X-Pagination-Per-Page', (string) $perPage);
 
-    $statement = $sql->prepareStatementForSqlObject($select);
+        $select = (clone $baseSelect)
+            ->limit($perPage)
+            ->offset($offset)
+            ->order('id DESC');
 
-    $results = iterator_to_array($statement->execute());
+        $statement = $sql->prepareStatementForSqlObject($select);
 
-    $response->getBody()->write(json_encode($results));
+        $results = iterator_to_array($statement->execute());
 
-    return $response;
-});
+        $response->getBody()->write(json_encode($results));
 
-$app->get('/users/{id}', function (Request $request, Response $response, array $args) {
-    Assertion::integerish($args['id']);
+        return $response;
+    });
 
-    $sql = new Sql($this->get('db'));
+    $group->get('/{id}', function (Request $request, Response $response, array $args) use ($sql, $baseSelect) {
+        Assertion::integerish($args['id']);
 
-    $select = $sql
-        ->select('users')
-        ->columns(['id', 'email', 'first_name', 'last_name'])
-        ->where(['id' => $args['id']]);
+        $select = (clone $baseSelect)
+            ->where(['id' => $args['id']]);
 
-    $statement = $sql->prepareStatementForSqlObject($select);
+        $statement = $sql->prepareStatementForSqlObject($select);
 
-    $results = $statement->execute();
+        $results = $statement->execute();
 
-    if ($results->count() === 0) {
-        throw new HttpNotFoundException($request);
-    }
+        if ($results->count() === 0) {
+            throw new HttpNotFoundException($request);
+        }
 
-    $response->getBody()->write(json_encode($results->current()));
+        $response->getBody()->write(json_encode($results->current()));
 
-    return $response;
+        return $response;
+    });
 });
 
 $app->run();
