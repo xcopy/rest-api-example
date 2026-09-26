@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 use App\Middleware\JsonResponseMiddleware;
+use App\Middleware\JsonRequestMiddleware;
 use Assert\Assertion;
 use DI\Container;
 use Laminas\Db\Adapter\Adapter;
@@ -33,14 +34,12 @@ $container->set('db', function () {
 AppFactory::setContainer($container);
 
 $app = AppFactory::create();
+$app->add(new JsonRequestMiddleware());
 $app->addRoutingMiddleware();
 $app->add(new TrailingSlash(false));
 $app->add(new ContentLengthMiddleware());
 $app->add(new JsonResponseMiddleware());
-
-$errorMiddleware = $app->addErrorMiddleware(true, true, true);
-$errorHandler = $errorMiddleware->getDefaultErrorHandler();
-$errorHandler->forceContentType('application/json');
+$app->addErrorMiddleware(true, true, true);
 
 $app->get('/users', function (Request $request, Response $response) {
     $sql = new Sql($this->get('db'));

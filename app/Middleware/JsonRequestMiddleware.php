@@ -7,12 +7,12 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
-class JsonResponseMiddleware implements MiddlewareInterface
+class JsonRequestMiddleware implements MiddlewareInterface
 {
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $response = $handler->handle($request);
+        $request = $request->withHeader('Accept', 'application/json');
 
-        return $response->withHeader('Content-Type', 'application/json');
+        return $handler->handle($request);
     }
 }
