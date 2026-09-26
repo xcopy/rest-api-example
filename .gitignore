@@ -1,3 +1,4 @@
 vendor
+db/db.sqlite3
 /.php-cs-fixer.cache
 /.php-cs-fixer.php

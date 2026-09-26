@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use App\Middleware\JsonResponseMiddleware;
 use Assert\Assertion;
 use DI\Container;
 use Laminas\Db\Adapter\Adapter;
@@ -12,7 +13,6 @@ use Laminas\Db\Sql\Sql;
 use Middlewares\TrailingSlash;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Psr\Http\Server\RequestHandlerInterface as Handler;
 use Slim\Exception\HttpNotFoundException;
 use Slim\Factory\AppFactory;
 use Slim\Middleware\ContentLengthMiddleware;
@@ -22,7 +22,7 @@ $container = new Container();
 $container->set('db', function () {
     $adapter =  new Adapter([
         'driver'   => 'Pdo_Sqlite',
-        'database' => __DIR__ . '/../storage/db.sqlite3',
+        'database' => __DIR__ . '/../db/db.sqlite3',
     ]);
 
     $adapter->query('PRAGMA foreign_keys = ON;')->execute();
@@ -36,16 +36,11 @@ $app = AppFactory::create();
 $app->addRoutingMiddleware();
 $app->add(new TrailingSlash(false));
 $app->add(new ContentLengthMiddleware());
+$app->add(new JsonResponseMiddleware());
 
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 $errorHandler = $errorMiddleware->getDefaultErrorHandler();
 $errorHandler->forceContentType('application/json');
-
-$app->add(function (Request $request, Handler $handler) {
-    $response = $handler->handle($request);
-
-    return $response->withHeader('Content-Type', 'application/json');
-});
 
 $app->get('/users', function (Request $request, Response $response) {
     $sql = new Sql($this->get('db'));

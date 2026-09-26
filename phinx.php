@@ -12,7 +12,7 @@ return [
         'default_environment' => 'development',
         'development' => [
             'adapter' => 'sqlite',
-            'name'    => __DIR__ . '/storage/db',
+            'name'    => __DIR__ . '/db/db',
         ],
     ],
 ];
