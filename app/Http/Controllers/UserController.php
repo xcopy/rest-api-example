@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\JsonResponse;
 use Assert\Assertion;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Expression;
@@ -46,7 +47,6 @@ class UserController
         $page = min($page, $totalPages > 0 ? $totalPages : 1);
         $offset = ($page - 1) * $perPage;
 
-        // Добавляем X-Pagination заголовки
         $response = $response
             ->withHeader('Access-Control-Expose-Headers', 'X-Pagination-Total-Count, X-Pagination-Total-Pages, X-Pagination-Current-Page, X-Pagination-Per-Page')
             ->withHeader('X-Pagination-Total-Count', (string) $totalCount)
@@ -60,11 +60,13 @@ class UserController
             ->offset($offset)
             ->order('id DESC');
 
-        $results = iterator_to_array($this->sql->prepareStatementForSqlObject($select)->execute());
+        $results = $this->sql
+            ->prepareStatementForSqlObject($select)
+            ->execute();
 
-        $response->getBody()->write(json_encode($results));
+        $data = iterator_to_array($results);
 
-        return $response;
+        return JsonResponse::write($response, $data);
     }
 
     public function show(Request $request, Response $response, array $args): Response
@@ -82,8 +84,8 @@ class UserController
             throw new HttpNotFoundException($request);
         }
 
-        $response->getBody()->write(json_encode($results->current()));
+        $data = $results->current();
 
-        return $response;
+        return JsonResponse::write($response, $data);
     }
 }
