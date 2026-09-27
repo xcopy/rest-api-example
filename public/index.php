@@ -5,11 +5,13 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 use App\Http\Controllers\UserController;
-use App\Middleware\JsonResponseMiddleware;
 use App\Middleware\JsonRequestMiddleware;
+use App\Middleware\JsonResponseMiddleware;
 use DI\ContainerBuilder;
 use Laminas\Db\Adapter\Adapter;
+use Leaf\Form;
 use Middlewares\TrailingSlash;
+use Psr\Container\ContainerInterface;
 use Slim\Factory\AppFactory;
 use Slim\Middleware\ContentLengthMiddleware;
 use Slim\Routing\RouteCollectorProxy;
@@ -27,7 +29,14 @@ $containerBuilder->addDefinitions([
 
         return $adapter;
     },
-    'db' => \DI\get(Adapter::class)
+    'db' => \DI\get(Adapter::class),
+    Form::class => function (ContainerInterface $container) {
+        $form = new Form();
+
+        $form->rule('unique', function () {}); // todo
+
+        return $form;
+    },
 ]);
 
 AppFactory::setContainer($containerBuilder->build());

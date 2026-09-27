@@ -10,6 +10,7 @@ use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Sql;
+use Leaf\Form;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpBadRequestException;
@@ -17,12 +18,16 @@ use Slim\Exception\HttpNotFoundException;
 
 class UserController
 {
+    private Form $form;
+
     private Sql $sql;
 
     private Select $baseSelect;
 
-    public function __construct(Adapter $db)
+    public function __construct(Adapter $db, Form $form)
     {
+        $this->form = $form;
+
         $this->sql = new Sql($db);
 
         $this->baseSelect = $this->sql
@@ -98,27 +103,16 @@ class UserController
 
     public function create(Request $request, Response $response): Response
     {
-        $data = $request->getParsedBody() ?? [];
+        $data = $this->form->validate($request->getParsedBody() ?? [], [
+            'email' => 'email',
+            'password' => 'min:8',
+            'first_name' => 'min:3|max:100',
+            'last_name' => 'min:3|max:100',
+        ]);
 
-        try {
-            Assert::that($data)
-                ->keyExists('email')
-                ->keyExists('password')
-                ->keyExists('first_name')
-                ->keyExists('last_name');
-
-            Assertion::email($data['email']);
-            Assertion::minLength($data['password'], 8);
-
-            Assert::that($data['first_name'])
-                ->notBlank()
-                ->string();
-
-            Assert::that($data['last_name'])
-                ->notBlank()
-                ->string();
-        } catch (\Throwable $e) {
-            throw new HttpUnprocessableEntityException($request, $e->getMessage());
+        if ($data === false) {
+            // todo
+            throw new HttpUnprocessableEntityException($request);
         }
 
         $insert = $this->sql
