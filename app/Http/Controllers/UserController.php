@@ -86,10 +86,9 @@ class UserController
 
     public function create(Request $request, Response $response): Response
     {
-        $data = $this->validator->validate($request->getParsedBody());
+        $data = $this->validator->validate($request->getParsedBody() ?? []);
 
         if ($data === false) {
-            // var_dump($this->validator->getErrors()); exit;
             throw new HttpUnprocessableEntityException($request);
         }
 
@@ -121,13 +120,14 @@ class UserController
         $this->findUser($request, $id);
 
         $data = $this->validator->validate(
-            $request->getParsedBody(),
+            $request->getParsedBody() ?? [],
             'update',
             ['user_id' => $id]
         );
 
-        if ($data === false) {
-            // var_dump($this->validator->getErrors()); exit;
+        if (is_array($data) && empty($data)) {
+            throw new HttpBadRequestException($request, 'The request body is empty');
+        } elseif ($data === false) {
             throw new HttpUnprocessableEntityException($request);
         }
 
