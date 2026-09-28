@@ -6,9 +6,11 @@ use Psr\Http\Message\ResponseInterface as Response;
 
 class JsonResponse
 {
-    public static function write(Response $response, mixed $data, int $status = 200): Response
+    public static function write(Response $response, mixed $data = null, int $status = 200): Response
     {
-        $response->getBody()->write(json_encode($data));
+        if ($data !== null) {
+            $response->getBody()->write(json_encode($data));
+        }
 
         return $response
             ->withHeader('Content-Type', 'application/json')
