@@ -6,15 +6,19 @@ class UserValidator extends BaseValidator
 {
     protected function rules(string $scenario, array $context = []): array
     {
+        $currentUserId = $context['user_id'] ?? null;
+
         $rules = [
-            'email' => 'email|unique:users',
+            'email' => "email|unique:users,$currentUserId",
             'password' => 'min:8',
             'first_name' => 'text|min:3|max:100',
             'last_name' => 'text|min:3|max:100',
         ];
 
         if ($scenario === 'update') {
-            $rules['password'] = 'optional|min:8';
+            foreach ($rules as $key => $value) {
+                $rules[$key] = "optional|$value";
+            }
         }
 
         return $rules;
