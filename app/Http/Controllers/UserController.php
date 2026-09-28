@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exception\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
-use Assert\Assert;
+use App\Validators\UserValidator;
 use Assert\Assertion;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Expression;
@@ -18,21 +18,21 @@ use Slim\Exception\HttpNotFoundException;
 
 class UserController
 {
-    private Form $form;
-
     private Sql $sql;
 
     private Select $baseSelect;
 
+    private UserValidator $validator;
+
     public function __construct(Adapter $db, Form $form)
     {
-        $this->form = $form;
-
         $this->sql = new Sql($db);
 
         $this->baseSelect = $this->sql
             ->select('users')
             ->columns(['id', 'email', 'first_name', 'last_name']);
+
+        $this->validator = new UserValidator($form);
     }
 
     public function index(Request $request, Response $response): Response
@@ -103,26 +103,18 @@ class UserController
 
     public function create(Request $request, Response $response): Response
     {
-        $data = $this->form->validate($request->getParsedBody() ?? [], [
-            'email' => 'email|unique:users',
-            'password' => 'min:8',
-            'first_name' => 'text|min:3|max:100',
-            'last_name' => 'text|min:3|max:100',
-        ]);
+        $data = $this->validator->validate($request->getParsedBody());
 
         if ($data === false) {
-            // var_dump($this->form->errors()); exit;
+            // var_dump($this->validator->getErrors()); exit;
             throw new HttpUnprocessableEntityException($request);
         }
 
+        $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+
         $insert = $this->sql
             ->insert('users')
-            ->values([
-                'email' => $data['email'],
-                'password' => password_hash($data['password'], PASSWORD_DEFAULT),
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-            ]);
+            ->values($data);
 
         $result = $this->sql
             ->prepareStatementForSqlObject($insert)
