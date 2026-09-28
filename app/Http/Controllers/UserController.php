@@ -79,26 +79,9 @@ class UserController
 
     public function show(Request $request, Response $response, array $args): Response
     {
-        try {
-            Assertion::integerish($args['id']);
-        } catch (\Throwable $e) {
-            throw new HttpBadRequestException($request, $e->getMessage());
-        }
+        $user = $this->findUser($request, $args['id'] ?? null);
 
-        $select = (clone $this->baseSelect)
-            ->where(['id' => $args['id']]);
-
-        $results = $this->sql
-            ->prepareStatementForSqlObject($select)
-            ->execute();
-
-        if ($results->count() === 0) {
-            throw new HttpNotFoundException($request);
-        }
-
-        $data = $results->current();
-
-        return JsonResponse::write($response, $data);
+        return JsonResponse::write($response, $user);
     }
 
     public function create(Request $request, Response $response): Response
@@ -129,5 +112,56 @@ class UserController
             ->current();
 
         return JsonResponse::write($response, $user, 201);
+    }
+
+    public function update(Request $request, Response $response, array $args): Response
+    {
+        $id = $args['id'] ?? null;
+
+        $this->findUser($request, $id);
+
+        $data = $this->validator->validate(
+            $request->getParsedBody(),
+            'update',
+            ['user_id' => $id]
+        );
+
+        if ($data === false) {
+            // var_dump($this->validator->getErrors()); exit;
+            throw new HttpUnprocessableEntityException($request);
+        }
+
+        $update = $this->sql
+            ->update('users')
+            ->where(compact('id'))
+            ->set($data);
+
+        $this->sql
+            ->prepareStatementForSqlObject($update)
+            ->execute();
+
+        return JsonResponse::write($response, status: 204);
+    }
+
+    private function findUser(Request $request, ?int $id): array
+    {
+        try {
+            Assertion::integerish($id);
+        } catch (\Throwable $e) {
+            throw new HttpBadRequestException($request, $e->getMessage());
+        }
+
+        $select = (clone $this->baseSelect)
+            ->where(compact('id'));
+
+        $results = $this->sql
+            ->prepareStatementForSqlObject($select)
+            ->execute();
+
+        if ($results->count() === 0) {
+            throw new HttpNotFoundException($request);
+        }
+
+        return $results->current();
     }
 }

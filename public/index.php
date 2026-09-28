@@ -80,6 +80,7 @@ $app->group('/users', function (RouteCollectorProxy $group) {
     $group->get('', [UserController::class, 'index']);
     $group->get('/{id}', [UserController::class, 'show']);
     $group->post('', [UserController::class, 'create']);
+    $group->post('/{id}', [UserController::class, 'update']);
 });
 
 $app->run();
