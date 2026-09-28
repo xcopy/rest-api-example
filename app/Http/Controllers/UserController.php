@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Exception\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Validators\UserValidator;
 use Assert\Assertion;
@@ -89,7 +88,7 @@ class UserController
         $data = $this->validator->validate($request->getParsedBody() ?? []);
 
         if ($data === false) {
-            throw new HttpUnprocessableEntityException($request);
+            return JsonResponse::write($response, $this->validator->getErrors(), 422);
         }
 
         $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
@@ -126,9 +125,9 @@ class UserController
         );
 
         if (is_array($data) && empty($data)) {
-            throw new HttpBadRequestException($request, 'The request body is empty');
+            throw new HttpBadRequestException($request, 'The request body is invalid');
         } elseif ($data === false) {
-            throw new HttpUnprocessableEntityException($request);
+            return JsonResponse::write($response, $this->validator->getErrors(), 422);
         }
 
         $update = $this->sql
