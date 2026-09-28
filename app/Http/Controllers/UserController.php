@@ -104,14 +104,14 @@ class UserController
     public function create(Request $request, Response $response): Response
     {
         $data = $this->form->validate($request->getParsedBody() ?? [], [
-            'email' => 'email',
+            'email' => 'email|unique:users',
             'password' => 'min:8',
-            'first_name' => 'min:3|max:100',
-            'last_name' => 'min:3|max:100',
+            'first_name' => 'text|min:3|max:100',
+            'last_name' => 'text|min:3|max:100',
         ]);
 
         if ($data === false) {
-            // todo
+            // var_dump($this->form->errors()); exit;
             throw new HttpUnprocessableEntityException($request);
         }
 
