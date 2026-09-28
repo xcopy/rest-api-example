@@ -37,10 +37,19 @@ $containerBuilder->addDefinitions([
         $form->rule('unique', function ($value, $param, $field) use ($container) {
             $sql = new Sql($container->get('db'));
 
+            $params = explode(',', $param);
+
+            $table = $params[0] ?? null;
+            $currentUserId = $params[1] ?? null;
+
             $select = $sql
-                ->select($param)
+                ->select($table)
                 ->where([$field => $value])
                 ->limit(1);
+
+            if ($currentUserId !== null) {
+                $select->where(['id != ?' => $currentUserId]);
+            }
 
             $results = $sql->prepareStatementForSqlObject($select)->execute();
 
@@ -61,8 +70,11 @@ $app->addRoutingMiddleware();
 $app->add(new TrailingSlash(false));
 $app->add(new ContentLengthMiddleware());
 $app->add(new JsonResponseMiddleware());
-$app->addErrorMiddleware(true, true, true);
 $app->addBodyParsingMiddleware();
+
+$errorMiddleware = $app->addErrorMiddleware(true, true, true);
+$errorHandler = $errorMiddleware->getDefaultErrorHandler();
+$errorHandler->forceContentType('application/json');
 
 $app->group('/users', function (RouteCollectorProxy $group) {
     $group->get('', [UserController::class, 'index']);
