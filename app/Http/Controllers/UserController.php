@@ -143,6 +143,23 @@ class UserController
         return JsonResponse::write($response, status: 204);
     }
 
+    public function delete(Request $request, Response $response, array $args): Response
+    {
+        $id = $args['id'] ?? null;
+
+        $this->findUser($request, $id);
+
+        $delete = $this->sql
+            ->delete('users')
+            ->where(compact('id'));
+
+        $this->sql
+            ->prepareStatementForSqlObject($delete)
+            ->execute();
+
+        return JsonResponse::write($response, status: 204);
+    }
+
     private function findUser(Request $request, ?int $id): array
     {
         try {

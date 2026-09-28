@@ -81,6 +81,7 @@ $app->group('/users', function (RouteCollectorProxy $group) {
     $group->get('/{id}', [UserController::class, 'show']);
     $group->post('', [UserController::class, 'create']);
     $group->post('/{id}', [UserController::class, 'update']);
+    $group->delete('/{id}', [UserController::class, 'delete']);
 });
 
 $app->run();
