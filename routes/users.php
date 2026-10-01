@@ -10,22 +10,24 @@ use Slim\Routing\RouteCollectorProxy;
 
 return function (App $app) {
     $app->group('/users', function (RouteCollectorProxy $group) {
+        $id = '/{id:[0-9]+}';
+
         $group->options('', function (Request $request, Response $response) {
             return $response
                 // ->withHeader('Access-Control-Allow-Origin', '*')
                 ->withHeader('Access-Control-Allow-Methods', 'GET, POST');
         });
-        $group->options('/{id}', function (Request $request, Response $response) {
+        $group->options($id, function (Request $request, Response $response) {
             return $response
                 // ->withHeader('Access-Control-Allow-Origin', '*')
-                ->withHeader('Access-Control-Allow-Methods', 'PATCH, POST, DELETE');
+                ->withHeader('Access-Control-Allow-Methods', 'PATCH, POST, PUT, DELETE');
         });
 
         $group->get('', [UserController::class, 'index']);
-        $group->get('/{id}', [UserController::class, 'show']);
+        $group->get($id, [UserController::class, 'show']);
         $group->post('', [UserController::class, 'create']);
-        $group->map(['POST', 'PATCH'], '/{id}', [UserController::class, 'update']);
-        $group->put('/{id}', [UserController::class, 'upsert']);
-        $group->delete('/{id}', [UserController::class, 'delete']);
+        $group->map(['POST', 'PATCH'], $id, [UserController::class, 'update']);
+        $group->put($id, [UserController::class, 'upsert']);
+        $group->delete($id, [UserController::class, 'delete']);
     });
 };
