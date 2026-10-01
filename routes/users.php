@@ -25,6 +25,7 @@ return function (App $app) {
         $group->get('/{id}', [UserController::class, 'show']);
         $group->post('', [UserController::class, 'create']);
         $group->map(['POST', 'PATCH'], '/{id}', [UserController::class, 'update']);
+        $group->put('/{id}', [UserController::class, 'upsert']);
         $group->delete('/{id}', [UserController::class, 'delete']);
     });
 };

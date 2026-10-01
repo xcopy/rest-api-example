@@ -146,6 +146,50 @@ class UserController
         return JsonResponse::write($response, status: 204);
     }
 
+    public function upsert(Request $request, Response $response, array $args): Response
+    {
+        $id = $args['id'] ?? null;
+
+        try {
+            $exists = $this->findUser($request, $id) !== false;
+        } catch (\Throwable) {
+            $exists = false;
+        }
+
+        $data = $this->validator->validate(
+            $request->getParsedBody() ?? [],
+            context: $exists ? ['user_id' => $id] : []
+        );
+
+        if (is_array($data) && empty($data)) {
+            throw new HttpBadRequestException($request, 'The request body is invalid');
+        } elseif ($data === false) {
+            return JsonResponse::write($response, $this->validator->getErrors(), 422);
+        }
+
+        if ($exists) {
+            $data['updated_at'] = date('Y-m-d H:i:s');
+        } else {
+            $data['id'] = $id;
+        }
+
+        $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+
+        $sql = $exists
+            ? $this->sql->update('users')->set($data)->where(compact('id'))
+            : $this->sql->insert('users')->values($data);
+
+        $this->sql
+            ->prepareStatementForSqlObject($sql)
+            ->execute();
+
+        return JsonResponse::write(
+            $response,
+            $exists ? null : $this->findUser($request, $id),
+            $exists ? 204 : 201
+        );
+    }
+
     public function delete(Request $request, Response $response, array $args): Response
     {
         $id = $args['id'] ?? null;
