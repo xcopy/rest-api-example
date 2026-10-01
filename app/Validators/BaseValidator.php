@@ -17,7 +17,7 @@ abstract class BaseValidator
 
     abstract protected function rules(string $scenario, array $context = []): array;
 
-    public function validate(array $data, string $scenario = 'create', array $context = [])
+    public function validate(array $data, string $scenario = 'create', array $context = []): array|false
     {
         $rules = $this->rules($scenario, $context);
 

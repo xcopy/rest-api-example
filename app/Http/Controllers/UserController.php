@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\JsonResponse;
 use App\Validators\UserValidator;
-use Assert\Assertion;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Select;
@@ -12,7 +11,6 @@ use Laminas\Db\Sql\Sql;
 use Leaf\Form;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Exception\HttpBadRequestException;
 use Slim\Exception\HttpNotFoundException;
 
 class UserController
@@ -87,9 +85,7 @@ class UserController
     {
         $data = $this->validator->validate($request->getParsedBody() ?? []);
 
-        if (is_array($data) && empty($data)) {
-            throw new HttpBadRequestException($request, 'The request body is invalid');
-        } elseif ($data === false) {
+        if ($data === false) {
             return JsonResponse::write($response, $this->validator->getErrors(), 422);
         }
 
@@ -126,9 +122,7 @@ class UserController
             ['user_id' => $id]
         );
 
-        if (is_array($data) && empty($data)) {
-            throw new HttpBadRequestException($request, 'The request body is invalid');
-        } elseif ($data === false) {
+        if ($data === false) {
             return JsonResponse::write($response, $this->validator->getErrors(), 422);
         }
 
@@ -161,9 +155,7 @@ class UserController
             context: $exists ? ['user_id' => $id] : []
         );
 
-        if (is_array($data) && empty($data)) {
-            throw new HttpBadRequestException($request, 'The request body is invalid');
-        } elseif ($data === false) {
+        if ($data === false) {
             return JsonResponse::write($response, $this->validator->getErrors(), 422);
         }
 
@@ -209,12 +201,6 @@ class UserController
 
     private function findUser(Request $request, ?int $id): array
     {
-        try {
-            Assertion::integerish($id);
-        } catch (\Throwable $e) {
-            throw new HttpBadRequestException($request, $e->getMessage());
-        }
-
         $select = (clone $this->baseSelect)
             ->where(compact('id'));
 
