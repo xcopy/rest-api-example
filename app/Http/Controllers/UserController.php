@@ -87,7 +87,9 @@ class UserController
     {
         $data = $this->validator->validate($request->getParsedBody() ?? []);
 
-        if ($data === false) {
+        if (is_array($data) && empty($data)) {
+            throw new HttpBadRequestException($request, 'The request body is invalid');
+        } elseif ($data === false) {
             return JsonResponse::write($response, $this->validator->getErrors(), 422);
         }
 
