@@ -132,6 +132,8 @@ class UserController
             return JsonResponse::write($response, $this->validator->getErrors(), 422);
         }
 
+        $data['updated_at'] = date('Y-m-d H:i:s');
+
         $update = $this->sql
             ->update('users')
             ->where(compact('id'))
