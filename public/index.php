@@ -64,7 +64,9 @@ AppFactory::setContainer($containerBuilder->build());
 
 $app = AppFactory::create();
 
+$auth = require __DIR__ . '/../routes/auth.php';
 $users = require __DIR__ . '/../routes/users.php';
+$auth($app);
 $users($app);
 
 // Order matters: LIFO (Last-In, First-Out)

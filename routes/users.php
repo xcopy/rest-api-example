@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\UserController;
+use App\Middleware\AuthenticationMiddleware;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use Slim\App;
@@ -29,5 +30,5 @@ return function (App $app) {
         $group->map(['POST', 'PATCH'], $id, [UserController::class, 'update']);
         $group->put($id, [UserController::class, 'upsert']);
         $group->delete($id, [UserController::class, 'delete']);
-    });
+    })->add(AuthenticationMiddleware::class);
 };
