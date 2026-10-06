@@ -14,6 +14,7 @@ final class CreateUserTokensTable extends AbstractMigration
             ->addColumn('expires_at', 'datetime', ['null' => false])
             ->addTimestamps()
             ->addIndex('token_hash', ['unique' => true])
+            ->addIndex('expires_at')
             ->addForeignKey('user_id', 'users', 'id', ['delete' => 'CASCADE'])
             ->create();
     }

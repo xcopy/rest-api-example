@@ -30,9 +30,12 @@ class AuthController
             return JsonResponse::write($response, $this->validator->getErrors(), 422);
         }
 
+        $email = strtolower(trim($credentials['email']));
+        $ip = $request->getServerParams()['REMOTE_ADDR'] ?? '0.0.0.0';
+
         $select = $this->sql
             ->select('users')
-            ->where(['email' => $credentials['email']])
+            ->where(compact('email'))
             ->limit(1);
 
         $user = $this->sql
@@ -40,14 +43,12 @@ class AuthController
             ->execute()
             ->current();
 
-        if ($user === false || !password_verify($credentials['password'], $user['password'])) {
-            $message = 'Invalid email or password.';
+        $successfull = $user && password_verify($credentials['password'], $user['password']);
 
-            return JsonResponse::write(
-                $response,
-                ['email' => $message, 'password' => $message],
-                422
-            );
+        $this->recordAttempt($email, $ip, $successfull);
+
+        if (!$successfull) {
+            return JsonResponse::write($response, ['message' => 'Invalid email or password.'], 401);
         }
 
         $token = bin2hex(random_bytes(32));
@@ -70,5 +71,21 @@ class AuthController
             'access_token' => $token,
             'expires_at' => $expiresAt->format(DATE_ATOM),
         ]);
+    }
+
+    private function recordAttempt(string $email, string $ip, bool $successful): void
+    {
+        $insert = $this->sql
+            ->insert('login_attempts')
+            ->values([
+                'email' => $email,
+                'ip_address' => $ip,
+                'successful' => $successful ? 1 : 0,
+                'attempted_at' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s'),
+            ]);
+
+        $this->sql
+            ->prepareStatementForSqlObject($insert)
+            ->execute();
     }
 }
