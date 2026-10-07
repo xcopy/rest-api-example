@@ -34,7 +34,7 @@
             "vendor/bin/phinx migrate"
         ],
         "db:seed": [
-            "vendor/bin/phinx seed:run"
+            "vendor/bin/phinx seed:run -s UserSeeder -s RoleSeeder -s PermissionSeeder -s PermissionRoleSeeder -s RoleUserSeeder"
         ]
     }
 }

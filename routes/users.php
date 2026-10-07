@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Http\Controllers\UserController;
 use App\Middleware\AuthenticationMiddleware;
+use App\Middleware\RbacMiddleware;
+use Laminas\Db\Adapter\Adapter;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use Slim\App;
@@ -24,11 +26,16 @@ return function (App $app) {
                 ->withHeader('Access-Control-Allow-Methods', 'PATCH, POST, PUT, DELETE');
         });
 
-        $group->get('', [UserController::class, 'index']);
-        $group->get($id, [UserController::class, 'show']);
-        $group->post('', [UserController::class, 'create']);
-        $group->map(['POST', 'PATCH'], $id, [UserController::class, 'update']);
-        $group->put($id, [UserController::class, 'upsert']);
-        $group->delete($id, [UserController::class, 'delete']);
+        $authorize = fn (string $permission) => new RbacMiddleware(
+            $group->getContainer()->get(Adapter::class),
+            $permission
+        );
+
+        $group->get('', [UserController::class, 'index'])->add($authorize('list users'));
+        $group->get($id, [UserController::class, 'show'])->add($authorize('show user'));
+        $group->post('', [UserController::class, 'create'])->add($authorize('create user'));
+        $group->map(['POST', 'PATCH'], $id, [UserController::class, 'update'])->add($authorize('update user'));
+        $group->put($id, [UserController::class, 'upsert'])->add($authorize('update user'));
+        $group->delete($id, [UserController::class, 'delete'])->add($authorize('delete user'));
     })->add(AuthenticationMiddleware::class);
 };
