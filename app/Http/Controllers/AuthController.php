@@ -18,6 +18,17 @@ class AuthController
 
     private AuthValidator $validator;
 
+    private const TOKEN_TTL = '+15 minutes';
+
+    private const WINDOW_SECONDS = 900;
+
+    private const LIMITS = [
+        'ip_failed' => 20,
+        'ip_total' => 100,
+        'email_failed' => 5,
+        'email_success' => 5,
+    ];
+
     public function __construct(Adapter $db, Form $form)
     {
         $this->sql = new Sql($db);
@@ -60,7 +71,7 @@ class AuthController
 
         $token = bin2hex(random_bytes(32));
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $expiresAt = $now->modify('+30 minutes');
+        $expiresAt = $now->modify(self::TOKEN_TTL);
 
         $insert = $this->sql
             ->insert('user_tokens')
@@ -80,13 +91,31 @@ class AuthController
         ]);
     }
 
-    private const WINDOW_SECONDS = 900;
-    private const LIMITS = [
-        'ip_failed' => 20,
-        'ip_total' => 100,
-        'email_failed' => 5,
-        'email_success' => 5,
-    ];
+    public function logout(Request $request, Response $response): Response
+    {
+        $sql = $this->sql
+            ->delete('user_tokens')
+            ->where(['token_hash' => $request->getAttribute('token_hash')]);
+
+        $this->sql
+            ->prepareStatementForSqlObject($sql)
+            ->execute();
+
+        return $response->withStatus(204);
+    }
+
+    public function logoutAll(Request $request, Response $response): Response
+    {
+        $sql = $this->sql
+            ->delete('user_tokens')
+            ->where(['user_id' => $request->getAttribute('user_id')]);
+
+        $this->sql
+            ->prepareStatementForSqlObject($sql)
+            ->execute();
+
+        return $response->withStatus(204);
+    }
 
     private function isRateLimited(string $email, string $ip): bool
     {

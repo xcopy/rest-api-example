@@ -28,31 +28,20 @@ class AuthenticationMiddleware implements MiddlewareInterface
             return $this->unauthorized();
         }
 
-        $tokenSelect = $this->sql
-            ->select('user_tokens')
-            ->columns(['user_id'])
+        $token_hash = hash('sha256', $matches[1]);
+
+        $select = $this->sql
+            ->select(['t' => 'user_tokens'])
+            ->columns([])
+            ->join(['u' => 'users'], 't.user_id = u.id', ['id'])
             ->where([
-                'token_hash' => hash('sha256', $matches[1]),
-                'expires_at > ?' => gmdate('Y-m-d H:i:s'),
+                't.token_hash' => $token_hash,
+                't.expires_at > ?' => gmdate('Y-m-d H:i:s'),
             ])
             ->limit(1);
 
-        $token = $this->sql
-            ->prepareStatementForSqlObject($tokenSelect)
-            ->execute()
-            ->current();
-
-        if ($token === false) {
-            return $this->unauthorized();
-        }
-
-        $userSelect = $this->sql
-            ->select('users')
-            ->where(['id' => $token['user_id']])
-            ->limit(1);
-
         $user = $this->sql
-            ->prepareStatementForSqlObject($userSelect)
+            ->prepareStatementForSqlObject($select)
             ->execute()
             ->current();
 
@@ -60,13 +49,17 @@ class AuthenticationMiddleware implements MiddlewareInterface
             return $this->unauthorized();
         }
 
-        return $handler->handle($request);
+        return $handler->handle(
+            $request
+                ->withAttribute('user_id', $user['id'])
+                ->withAttribute('token_hash', $token_hash)
+        );
     }
 
     private function unauthorized(): ResponseInterface
     {
         $response = (new Response())->withHeader('WWW-Authenticate', 'Bearer');
 
-        return JsonResponse::write($response, status: 401);
+        return JsonResponse::write($response, ['message' => 'Unauthenticated.'], 401);
     }
 }
