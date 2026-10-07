@@ -21,11 +21,12 @@ final class CreateLoginAttemptsTable extends AbstractMigration
     {
         $this->table('login_attempts')
             ->addColumn('email', 'string', ['null' => false])
-            ->addColumn('ip_address', 'string', ['limit' => 45, 'null' => false])
+            ->addColumn('ip', 'string', ['limit' => 45, 'null' => false])
             ->addColumn('successful', 'boolean', ['default' => false])
             ->addColumn('attempted_at', 'datetime', ['null' => false])
+            ->addTimestamps()
             ->addIndex(['email', 'attempted_at'])
-            ->addIndex(['ip_address', 'attempted_at'])
+            ->addIndex(['ip', 'attempted_at'])
             ->create();
     }
 }
