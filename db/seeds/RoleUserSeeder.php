@@ -20,10 +20,24 @@ class RoleUserSeeder extends AbstractSeed
 
         $table->truncate();
 
-        $table
-            ->insert([
-                ['role_id' => 1, 'user_id' => 1],
-            ])
-            ->saveData();
+        $roles = array_column($this->fetchAll('SELECT id, name FROM roles'), 'id', 'name');
+
+        if (!isset($roles['admin'], $roles['user'])) {
+            throw new RuntimeException('The admin and user roles must be seeded before user role assignments.');
+        }
+
+        $users = $this->fetchAll('SELECT id FROM users ORDER BY id');
+        $data = [];
+
+        foreach ($users as $index => $user) {
+            $data[] = [
+                'role_id' => $index === 0 ? $roles['admin'] : $roles['user'],
+                'user_id' => $user['id'],
+            ];
+        }
+
+        if ($data !== []) {
+            $table->insert($data)->saveData();
+        }
     }
 }

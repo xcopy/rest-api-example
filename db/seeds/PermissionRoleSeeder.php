@@ -20,14 +20,30 @@ class PermissionRoleSeeder extends AbstractSeed
 
         $table->truncate();
 
-        $table
-            ->insert([
-                ['permission_id' => 1, 'role_id' => 1],
-                ['permission_id' => 2, 'role_id' => 1],
-                ['permission_id' => 3, 'role_id' => 1],
-                ['permission_id' => 4, 'role_id' => 1],
-                ['permission_id' => 5, 'role_id' => 1],
-            ])
-            ->saveData();
+        $roles = array_column($this->fetchAll('SELECT id, name FROM roles'), 'id', 'name');
+        $permissions = array_column($this->fetchAll('SELECT id, name FROM permissions'), 'id', 'name');
+
+        if (!isset($roles['admin'], $roles['user'])) {
+            throw new RuntimeException('The admin and user roles must be seeded before role permissions.');
+        }
+
+        $data = [];
+
+        foreach ($permissions as $permissionId) {
+            $data[] = ['permission_id' => $permissionId, 'role_id' => $roles['admin']];
+        }
+
+        foreach (['show user', 'update user'] as $permissionName) {
+            if (!isset($permissions[$permissionName])) {
+                throw new RuntimeException("The $permissionName permission must be seeded before role permissions.");
+            }
+
+            $data[] = [
+                'permission_id' => $permissions[$permissionName],
+                'role_id' => $roles['user'],
+            ];
+        }
+
+        $table->insert($data)->saveData();
     }
 }

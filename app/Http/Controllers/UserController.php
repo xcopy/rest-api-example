@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\JsonResponse;
+use App\Policies\UserPolicy;
 use App\Validators\UserValidator;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Expression;
@@ -21,9 +22,12 @@ class UserController
 
     private UserValidator $validator;
 
+    private UserPolicy $policy;
+
     public function __construct(Adapter $db, Form $form)
     {
         $this->sql = new Sql($db);
+        $this->policy = new UserPolicy($db);
 
         $this->baseSelect = $this->sql
             ->select('users')
@@ -34,6 +38,8 @@ class UserController
 
     public function index(Request $request, Response $response): Response
     {
+        $this->policy->assertCanList($request);
+
         $queryParams = $request->getQueryParams();
 
         $page = isset($queryParams['page']) ? max(1, (int) $queryParams['page']) : 1;
@@ -76,13 +82,19 @@ class UserController
 
     public function show(Request $request, Response $response, array $args): Response
     {
-        $user = $this->findUser($request, $args['id'] ?? null);
+        $id = $args['id'] ?? null;
+
+        $user = $this->findUser($request, $id);
+
+        $this->policy->assertCanView($request, (int) $id);
 
         return JsonResponse::write($response, $user);
     }
 
     public function create(Request $request, Response $response): Response
     {
+        $this->policy->assertCanCreate($request);
+
         $data = $this->validator->validate($request->getParsedBody() ?? []);
 
         if ($data === false) {
@@ -99,8 +111,12 @@ class UserController
             ->prepareStatementForSqlObject($insert)
             ->execute();
 
+        $user_id = (int) $result->getGeneratedValue();
+
+        $this->assignDefaultRole($user_id);
+
         $select = (clone $this->baseSelect)
-            ->where(['id' => $result->getGeneratedValue()]);
+            ->where(['id' => $user_id]);
 
         $user = $this->sql
             ->prepareStatementForSqlObject($select)
@@ -114,7 +130,9 @@ class UserController
     {
         $id = $args['id'] ?? null;
 
-        $this->findUser($request, $id);
+        $user = $this->findUser($request, $id);
+
+        $this->policy->assertCanUpdate($request, (int) $id);
 
         $data = $this->validator->validate(
             $request->getParsedBody() ?? [],
@@ -145,9 +163,17 @@ class UserController
         $id = $args['id'] ?? null;
 
         try {
-            $exists = $this->findUser($request, $id) !== false;
-        } catch (\Throwable) {
+            $user = $this->findUser($request, $id);
+            $exists = true;
+        } catch (HttpNotFoundException) {
+            $user = null;
             $exists = false;
+        }
+
+        if ($exists) {
+            $this->policy->assertCanUpdate($request, (int) $id);
+        } else {
+            $this->policy->assertCanCreate($request);
         }
 
         $data = $this->validator->validate(
@@ -175,6 +201,10 @@ class UserController
             ->prepareStatementForSqlObject($sql)
             ->execute();
 
+        if (!$exists) {
+            $this->assignDefaultRole((int) $id);
+        }
+
         return JsonResponse::write(
             $response,
             $exists ? null : $this->findUser($request, $id),
@@ -188,6 +218,8 @@ class UserController
 
         $this->findUser($request, $id);
 
+        $this->policy->assertCanDelete($request, (int) $id);
+
         $delete = $this->sql
             ->delete('users')
             ->where(compact('id'));
@@ -199,7 +231,36 @@ class UserController
         return JsonResponse::write($response, status: 204);
     }
 
-    private function findUser(Request $request, ?int $id): array
+    private function assignDefaultRole(int $user_id): void
+    {
+        $select = $this->sql
+            ->select('roles')
+            ->columns(['id'])
+            ->where(['name' => 'user'])
+            ->limit(1);
+
+        $role = $this->sql
+            ->prepareStatementForSqlObject($select)
+            ->execute()
+            ->current();
+
+        if ($role === false) {
+            throw new \RuntimeException('The default user role is not configured.');
+        }
+
+        $insert = $this->sql
+            ->insert('role_user')
+            ->values([
+                'role_id' => $role['id'],
+                'user_id' => $user_id,
+            ]);
+
+        $this->sql
+            ->prepareStatementForSqlObject($insert)
+            ->execute();
+    }
+
+    private function findUser(Request $request, int|string|null $id): array
     {
         $select = (clone $this->baseSelect)
             ->where(compact('id'));

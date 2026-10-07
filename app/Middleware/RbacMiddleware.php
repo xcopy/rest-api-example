@@ -24,9 +24,7 @@ class RbacMiddleware implements MiddlewareInterface
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $user_id = $request->getAttribute('user_id');
-
-        if (!$user_id) {
+        if (!$user_id = $request->getAttribute('user_id')) {
             throw new HttpUnauthorizedException($request);
         }
 
