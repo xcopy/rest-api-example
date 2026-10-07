@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\AuthController;
-use App\Middleware\AuthenticationMiddleware;
+use App\Middlewares\AuthenticationMiddleware;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 

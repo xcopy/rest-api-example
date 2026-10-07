@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use App\Middleware\JsonRequestMiddleware;
-use App\Middleware\JsonResponseMiddleware;
+use App\Middlewares\JsonRequestMiddleware;
+use App\Middlewares\JsonResponseMiddleware;
 use DI\ContainerBuilder;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;

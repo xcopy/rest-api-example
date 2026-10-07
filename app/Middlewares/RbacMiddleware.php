@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Middleware;
+namespace App\Middlewares;
 
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;

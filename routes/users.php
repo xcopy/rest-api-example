@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\UserController;
-use App\Middleware\AuthenticationMiddleware;
-use App\Middleware\RbacMiddleware;
+use App\Middlewares\AuthenticationMiddleware;
+use App\Middlewares\RbacMiddleware;
 use Laminas\Db\Adapter\Adapter;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
