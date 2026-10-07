@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Middleware;
 
-use App\Http\JsonResponse;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Slim\Psr7\Response;
+use Slim\Exception\HttpForbiddenException;
+use Slim\Exception\HttpUnauthorizedException;
 
 class RbacMiddleware implements MiddlewareInterface
 {
@@ -27,7 +27,7 @@ class RbacMiddleware implements MiddlewareInterface
         $user_id = $request->getAttribute('user_id');
 
         if (!$user_id) {
-            return JsonResponse::write(new Response(), ['message' => 'Unauthenticated.'], 401);
+            throw new HttpUnauthorizedException($request);
         }
 
         $select = $this->sql
@@ -47,7 +47,7 @@ class RbacMiddleware implements MiddlewareInterface
             ->current();
 
         if ($permission === false) {
-            return JsonResponse::write(new Response(), ['message' => 'Forbidden.'], 403);
+            throw new HttpForbiddenException($request);
         }
 
         return $handler->handle($request);

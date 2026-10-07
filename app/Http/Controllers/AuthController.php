@@ -11,6 +11,8 @@ use Laminas\Db\Sql\Where;
 use Leaf\Form;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Exception\HttpTooManyRequestsException;
+use Slim\Exception\HttpUnauthorizedException;
 
 class AuthController
 {
@@ -47,8 +49,7 @@ class AuthController
         $ip = $request->getServerParams()['REMOTE_ADDR'] ?? '0.0.0.0';
 
         if ($this->isRateLimited($email, $ip)) {
-            return JsonResponse::write($response, ['message' => 'Too many attempts. Try again later.'], 429)
-                ->withHeader('Retry-After', (string) self::WINDOW_SECONDS);
+            throw new HttpTooManyRequestsException($request);
         }
 
         $select = $this->sql
@@ -66,7 +67,7 @@ class AuthController
         $this->recordAttempt($email, $ip, $successfull);
 
         if (!$successfull) {
-            return JsonResponse::write($response, ['message' => 'Invalid email or password.'], 401);
+            throw new HttpUnauthorizedException($request, 'Invalid email or password.');
         }
 
         $token = bin2hex(random_bytes(32));

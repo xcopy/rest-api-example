@@ -2,14 +2,13 @@
 
 namespace App\Middleware;
 
-use App\Http\JsonResponse;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Slim\Psr7\Response;
+use Slim\Exception\HttpUnauthorizedException;
 
 class AuthenticationMiddleware implements MiddlewareInterface
 {
@@ -25,7 +24,7 @@ class AuthenticationMiddleware implements MiddlewareInterface
         $authorization = $request->getHeaderLine('Authorization');
 
         if (!preg_match('/^Bearer\s+([a-f0-9]{64})$/i', $authorization, $matches)) {
-            return $this->unauthorized();
+            throw new HttpUnauthorizedException($request);
         }
 
         $token_hash = hash('sha256', $matches[1]);
@@ -46,7 +45,7 @@ class AuthenticationMiddleware implements MiddlewareInterface
             ->current();
 
         if ($user === false) {
-            return $this->unauthorized();
+            throw new HttpUnauthorizedException($request);
         }
 
         return $handler->handle(
@@ -54,12 +53,5 @@ class AuthenticationMiddleware implements MiddlewareInterface
                 ->withAttribute('user_id', $user['id'])
                 ->withAttribute('token_hash', $token_hash)
         );
-    }
-
-    private function unauthorized(): ResponseInterface
-    {
-        $response = (new Response())->withHeader('WWW-Authenticate', 'Bearer');
-
-        return JsonResponse::write($response, ['message' => 'Unauthenticated.'], 401);
     }
 }
