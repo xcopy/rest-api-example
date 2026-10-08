@@ -12,8 +12,8 @@ class RateLimitUpsert extends Insert
     {
         parent::__construct('api_rate_limits');
 
-        $this->specifications[self::SPECIFICATION_INSERT] =
-            'INSERT INTO %1$s (%2$s) VALUES (%3$s)
+        $this->specifications[self::SPECIFICATION_INSERT]
+            = 'INSERT INTO %1$s (%2$s) VALUES (%3$s)
             ON CONFLICT ("ip_hash") DO UPDATE SET
                 "request_count" = CASE
                     WHEN "window_start" = excluded."window_start" THEN "request_count" + 1

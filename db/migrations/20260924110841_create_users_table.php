@@ -22,8 +22,8 @@ final class CreateUsersTable extends AbstractMigration
         $this->table('users')
             ->addColumn('email', 'string', ['null' => false])
             ->addColumn('password', 'string', ['null' => false])
-            ->addColumn('first_name', 'string', ['null'=> false])
-            ->addColumn('last_name', 'string', ['null'=> false])
+            ->addColumn('first_name', 'string', ['null' => false])
+            ->addColumn('last_name', 'string', ['null' => false])
             ->addTimestamps()
             ->addIndex(['email'], ['unique' => true])
             ->create();

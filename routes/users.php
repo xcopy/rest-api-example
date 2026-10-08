@@ -7,8 +7,8 @@ use App\Middlewares\AuthenticationMiddleware;
 use App\Middlewares\RateLimitMiddleware;
 use App\Middlewares\RbacMiddleware;
 use Laminas\Db\Adapter\Adapter;
-use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -27,7 +27,7 @@ return function (App $app) {
                 ->withHeader('Access-Control-Allow-Methods', 'PATCH, POST, PUT, DELETE');
         });
 
-        $authorize = fn (string $permission) => new RbacMiddleware(
+        $authorize = fn(string $permission) => new RbacMiddleware(
             $group->getContainer()->get(Adapter::class),
             $permission
         );
