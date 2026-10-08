@@ -6,8 +6,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use App\Error\Renderers\JsonErrorRenderer;
 use App\Handlers\ErrorHandler;
-use App\Middlewares\JsonRequestMiddleware;
-use App\Middlewares\JsonResponseMiddleware;
+use App\Middlewares\CorsMiddleware;
 use App\Middlewares\RateLimitMiddleware;
 use DI\ContainerBuilder;
 use Laminas\Db\Adapter\Adapter;
@@ -74,11 +73,9 @@ $users($app);
 
 // Order matters: LIFO (Last-In, First-Out)
 $app->addBodyParsingMiddleware();
-$app->add(JsonResponseMiddleware::class);
-$app->add(ContentLengthMiddleware::class);
 $app->addRoutingMiddleware();
+$app->add(ContentLengthMiddleware::class);
 $app->add(TrailingSlash::class);
-$app->add(JsonRequestMiddleware::class);
 $app->add(RateLimitMiddleware::class);
 
 $errorHandler = new ErrorHandler($app->getCallableResolver(), $app->getResponseFactory());
@@ -88,4 +85,5 @@ $errorHandler->registerErrorRenderer('application/json', JsonErrorRenderer::clas
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 $errorMiddleware->setDefaultErrorHandler($errorHandler);
 
+$app->add(CorsMiddleware::class);
 $app->run();
