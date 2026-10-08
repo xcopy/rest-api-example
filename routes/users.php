@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Http\Controllers\UserController;
 use App\Middlewares\AuthenticationMiddleware;
-use App\Middlewares\RateLimitMiddleware;
 use App\Middlewares\RbacMiddleware;
 use Laminas\Db\Adapter\Adapter;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -39,6 +38,5 @@ return function (App $app) {
         $group->put($id, [UserController::class, 'upsert'])->add($authorize('update user'));
         $group->delete($id, [UserController::class, 'delete'])->add($authorize('delete user'));
     })
-    ->add(AuthenticationMiddleware::class)
-    ->add(RateLimitMiddleware::class);
+    ->add(AuthenticationMiddleware::class);
 };

@@ -7,6 +7,7 @@ require __DIR__ . '/../vendor/autoload.php';
 use App\Handlers\ErrorHandler;
 use App\Middlewares\JsonRequestMiddleware;
 use App\Middlewares\JsonResponseMiddleware;
+use App\Middlewares\RateLimitMiddleware;
 use DI\ContainerBuilder;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
@@ -72,11 +73,12 @@ $users($app);
 
 // Order matters: LIFO (Last-In, First-Out)
 $app->addBodyParsingMiddleware();
-$app->add(new JsonResponseMiddleware());
-$app->add(new ContentLengthMiddleware());
+$app->add(JsonResponseMiddleware::class);
+$app->add(ContentLengthMiddleware::class);
 $app->addRoutingMiddleware();
-$app->add(new TrailingSlash(false));
-$app->add(new JsonRequestMiddleware());
+$app->add(TrailingSlash::class);
+$app->add(JsonRequestMiddleware::class);
+$app->add(RateLimitMiddleware::class);
 
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 $errorMiddleware->setDefaultErrorHandler(
