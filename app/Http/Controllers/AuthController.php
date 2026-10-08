@@ -18,8 +18,6 @@ class AuthController
 
     private AuthValidator $validator;
 
-    private const TOKEN_TTL = '+15 minutes';
-
     public function __construct(Adapter $db, Form $form)
     {
         $this->sql = new Sql($db);
@@ -52,9 +50,11 @@ class AuthController
             throw new HttpUnauthorizedException($request, 'Invalid email or password.');
         }
 
+        $config = require BASE_PATH . '/config/auth.php';
+
         $token = bin2hex(random_bytes(32));
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $expiresAt = $now->modify(self::TOKEN_TTL);
+        $expiresAt = $now->modify($config['access_token_ttl']);
 
         $insert = $this->sql
             ->insert('user_tokens')

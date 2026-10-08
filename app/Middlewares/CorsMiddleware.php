@@ -12,12 +12,12 @@ use Slim\Psr7\Response;
 
 class CorsMiddleware implements MiddlewareInterface
 {
-    private const ALLOWED_ORIGINS = ['http://localhost:8000'];
-
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
+        $config = require BASE_PATH . '/config/cors.php';
+
         $origin = $request->getHeaderLine('Origin');
-        $allowed = $origin !== '' && in_array($origin, self::ALLOWED_ORIGINS, true);
+        $allowed = $origin !== '' && in_array($origin, $config['allowed_origins']);
         $isPreflight = $request->getMethod() === 'OPTIONS'
             && $request->hasHeader('Origin')
             && $request->hasHeader('Access-Control-Request-Method');
@@ -34,13 +34,13 @@ class CorsMiddleware implements MiddlewareInterface
 
         if ($isPreflight) {
             $response = $response
-                ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
-                ->withHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type')
-                ->withHeader('Access-Control-Max-Age', '600');
+                ->withHeader('Access-Control-Allow-Methods', $config['allowed_methods'])
+                ->withHeader('Access-Control-Allow-Headers', $config['allowed_headers'])
+                ->withHeader('Access-Control-Max-Age', $config['max_age']);
         }
 
         return $response
             ->withHeader('Access-Control-Allow-Origin', $origin)
-            ->withHeader('Access-Control-Expose-Headers', 'RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Retry-After');
+            ->withHeader('Access-Control-Expose-Headers', $config['exposed_headers']);
     }
 }

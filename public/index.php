@@ -9,6 +9,7 @@ use App\Handlers\ErrorHandler;
 use App\Middlewares\CorsMiddleware;
 use App\Middlewares\RateLimitMiddleware;
 use DI\ContainerBuilder;
+use Dotenv\Dotenv;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use Leaf\Form;
@@ -16,6 +17,10 @@ use Middlewares\TrailingSlash;
 use Psr\Container\ContainerInterface;
 use Slim\Factory\AppFactory;
 use Slim\Middleware\ContentLengthMiddleware;
+
+define('BASE_PATH', dirname(__DIR__));
+
+Dotenv::createUnsafeImmutable(BASE_PATH)->load();
 
 $containerBuilder = new ContainerBuilder();
 $containerBuilder->useAutowiring(true);

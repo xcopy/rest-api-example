@@ -16,10 +16,6 @@ use Slim\Exception\HttpTooManyRequestsException;
 
 class RateLimitMiddleware implements MiddlewareInterface
 {
-    private const LIMIT = 60;
-
-    private const WINDOW_SECONDS = 60;
-
     private Sql $sql;
 
     public function __construct(Adapter $db)
@@ -36,9 +32,11 @@ class RateLimitMiddleware implements MiddlewareInterface
             throw new \RuntimeException('A valid client IP address is required for rate limiting.');
         }
 
+        $config = require BASE_PATH . '/config/rate-limit.php';
+
         $now = time();
-        $windowStart = intdiv($now, self::WINDOW_SECONDS) * self::WINDOW_SECONDS;
-        $resetAfter = ($windowStart + self::WINDOW_SECONDS) - $now;
+        $windowStart = intdiv($now, $config['window']) * $config['window'];
+        $resetAfter = ($windowStart + $config['window']) - $now;
         $ipHash = hash('sha256', $packedAddress);
 
         $deleteExpired = $this->sql
@@ -49,7 +47,7 @@ class RateLimitMiddleware implements MiddlewareInterface
             ->prepareStatementForSqlObject($deleteExpired)
             ->execute();
 
-        $upsert = (new RateLimitUpsert(self::LIMIT))
+        $upsert = (new RateLimitUpsert($config['limit']))
             ->values([
                 'ip_hash' => $ipHash,
                 'window_start' => $windowStart,
@@ -61,7 +59,7 @@ class RateLimitMiddleware implements MiddlewareInterface
             ->execute();
 
         $blocked = $result->getAffectedRows() === 0;
-        $requestCount = self::LIMIT;
+        $requestCount = $config['limit'];
 
         if (!$blocked) {
             $select = $this->sql
@@ -80,10 +78,10 @@ class RateLimitMiddleware implements MiddlewareInterface
             $requestCount = (int) $row['request_count'];
         }
 
-        $remaining = max(0, self::LIMIT - $requestCount);
+        $remaining = max(0, $config['limit'] - $requestCount);
 
         $headers = [
-            'RateLimit-Limit' => (string) self::LIMIT,
+            'RateLimit-Limit' => (string) $config['limit'],
             'RateLimit-Remaining' => (string) ($blocked ? 0 : $remaining),
             'RateLimit-Reset' => (string) $resetAfter,
         ];
