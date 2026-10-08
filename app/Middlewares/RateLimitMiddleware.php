@@ -82,20 +82,26 @@ class RateLimitMiddleware implements MiddlewareInterface
 
         $remaining = max(0, self::LIMIT - $requestCount);
 
+        $headers = [
+            'RateLimit-Limit' => (string) self::LIMIT,
+            'RateLimit-Remaining' => (string) ($blocked ? 0 : $remaining),
+            'RateLimit-Reset' => (string) $resetAfter,
+        ];
+
         if ($blocked) {
+            $headers['Retry-After'] = (string) $resetAfter;
+
             throw new HttpTooManyRequestsException(
-                ErrorHandler::withErrorHeaders($request, [
-                    'RateLimit-Limit' => (string) self::LIMIT,
-                    'RateLimit-Remaining' => '0',
-                    'RateLimit-Reset' => (string) $resetAfter,
-                    'Retry-After' => (string) $resetAfter,
-                ]),
+                ErrorHandler::withErrorHeaders($request, $headers)
             );
         }
 
-        return $handler->handle($request)
-            ->withHeader('RateLimit-Limit', (string) self::LIMIT)
-            ->withHeader('RateLimit-Remaining', (string) $remaining)
-            ->withHeader('RateLimit-Reset', (string) $resetAfter);
+        $response = $handler->handle($request);
+
+        foreach ($headers as $name => $value) {
+            $response = $response->withHeader($name, $value);
+        }
+
+        return $response;
     }
 }
