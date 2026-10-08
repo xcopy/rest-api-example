@@ -9,8 +9,10 @@ use Slim\Routing\RouteCollectorProxy;
 
 return function (App $app) {
     $app->group('/auth', function (RouteCollectorProxy $group) {
-        $group->post('/login', [AuthController::class, 'login']);
-        $group->post('/logout', [AuthController::class, 'logout'])->add(AuthenticationMiddleware::class);
-        $group->post('/logout-all', [AuthController::class, 'logoutAll'])->add(AuthenticationMiddleware::class);
+        $controllerClass = AuthController::class;
+
+        $group->post('/login', [$controllerClass, 'login']);
+        $group->post('/logout', [$controllerClass, 'logout'])->add(AuthenticationMiddleware::class);
+        $group->post('/logout-all', [$controllerClass, 'logoutAll'])->add(AuthenticationMiddleware::class);
     });
 };
