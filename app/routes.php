@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Middlewares\AuthenticationMiddleware;
 use App\Middlewares\RbacMiddleware;
@@ -10,6 +11,20 @@ use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
 return function (App $app) {
+    // auth
+    $app->group('/auth', function (RouteCollectorProxy $group) {
+        $controllerClass = AuthController::class;
+
+        $group->post('/login', [$controllerClass, 'login']);
+        $group
+            ->post('/logout', [$controllerClass, 'logout'])
+            ->add(AuthenticationMiddleware::class);
+        $group
+            ->post('/logout-all', [$controllerClass, 'logoutAll'])
+            ->add(AuthenticationMiddleware::class);
+    });
+
+    // users
     $app
         ->group('/users', function (RouteCollectorProxy $group) {
             $controllerClass = UserController::class;
