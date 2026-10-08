@@ -4,15 +4,10 @@ namespace App\Handlers;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Slim\Error\Renderers\JsonErrorRenderer;
 use Slim\Exception\HttpException;
 
 class ErrorHandler extends \Slim\Handlers\ErrorHandler
 {
-    protected string $defaultErrorRendererContentType = 'application/json';
-
-    protected $defaultErrorRenderer = JsonErrorRenderer::class;
-
     private const ATTRIBUTE = 'exception_headers';
 
     public static function withErrorHeaders(

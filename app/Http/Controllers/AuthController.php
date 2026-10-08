@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Validators\AuthValidator;
 use Laminas\Db\Adapter\Adapter;
@@ -19,15 +20,6 @@ class AuthController
 
     private const TOKEN_TTL = '+15 minutes';
 
-    private const WINDOW_SECONDS = 900;
-
-    private const LIMITS = [
-        'ip_failed' => 20,
-        'ip_total' => 100,
-        'email_failed' => 5,
-        'email_success' => 5,
-    ];
-
     public function __construct(Adapter $db, Form $form)
     {
         $this->sql = new Sql($db);
@@ -39,7 +31,7 @@ class AuthController
         $credentials = $this->validator->validate($request->getParsedBody() ?? [], 'login');
 
         if ($credentials === false) {
-            return JsonResponse::write($response, $this->validator->getErrors(), 422);
+            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
         }
 
         $email = strtolower(trim($credentials['email']));

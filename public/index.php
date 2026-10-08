@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use App\Error\Renderers\JsonErrorRenderer;
 use App\Handlers\ErrorHandler;
 use App\Middlewares\JsonRequestMiddleware;
 use App\Middlewares\JsonResponseMiddleware;
@@ -80,9 +81,11 @@ $app->add(TrailingSlash::class);
 $app->add(JsonRequestMiddleware::class);
 $app->add(RateLimitMiddleware::class);
 
+$errorHandler = new ErrorHandler($app->getCallableResolver(), $app->getResponseFactory());
+$errorHandler->forceContentType('application/json');
+$errorHandler->registerErrorRenderer('application/json', JsonErrorRenderer::class);
+
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
-$errorMiddleware->setDefaultErrorHandler(
-    new ErrorHandler($app->getCallableResolver(), $app->getResponseFactory()),
-);
+$errorMiddleware->setDefaultErrorHandler($errorHandler);
 
 $app->run();

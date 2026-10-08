@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Policies\UserPolicy;
 use App\Validators\UserValidator;
@@ -98,7 +99,7 @@ class UserController
         $data = $this->validator->validate($request->getParsedBody() ?? []);
 
         if ($data === false) {
-            return JsonResponse::write($response, $this->validator->getErrors(), 422);
+            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
         }
 
         $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
@@ -141,7 +142,7 @@ class UserController
         );
 
         if ($data === false) {
-            return JsonResponse::write($response, $this->validator->getErrors(), 422);
+            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
         }
 
         $data['updated_at'] = date('Y-m-d H:i:s');
@@ -182,7 +183,7 @@ class UserController
         );
 
         if ($data === false) {
-            return JsonResponse::write($response, $this->validator->getErrors(), 422);
+            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
         }
 
         if ($exists) {
