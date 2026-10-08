@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use App\Handlers\ErrorHandler;
 use App\Middlewares\JsonRequestMiddleware;
 use App\Middlewares\JsonResponseMiddleware;
 use DI\ContainerBuilder;
@@ -78,7 +79,8 @@ $app->add(new TrailingSlash(false));
 $app->add(new JsonRequestMiddleware());
 
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
-$errorHandler = $errorMiddleware->getDefaultErrorHandler();
-$errorHandler->forceContentType('application/json');
+$errorMiddleware->setDefaultErrorHandler(
+    new ErrorHandler($app->getCallableResolver(), $app->getResponseFactory()),
+);
 
 $app->run();

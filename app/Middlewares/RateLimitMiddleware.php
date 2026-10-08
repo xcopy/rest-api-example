@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Middlewares;
 
-use App\Http\JsonResponse;
+use App\Handlers\ErrorHandler;
 use App\Sql\RateLimitUpsert;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
@@ -12,7 +12,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Slim\Psr7\Response as SlimResponse;
+use Slim\Exception\HttpTooManyRequestsException;
 
 class RateLimitMiddleware implements MiddlewareInterface
 {
@@ -83,14 +83,13 @@ class RateLimitMiddleware implements MiddlewareInterface
         $remaining = max(0, self::LIMIT - $requestCount);
 
         if ($blocked) {
-            return JsonResponse::write(
-                (new SlimResponse())
-                    ->withHeader('RateLimit-Limit', (string) self::LIMIT)
-                    ->withHeader('RateLimit-Remaining', '0')
-                    ->withHeader('RateLimit-Reset', (string) $resetAfter)
-                    ->withHeader('Retry-After', (string) $resetAfter),
-                ['message' => 'Too many requests.'],
-                429
+            throw new HttpTooManyRequestsException(
+                ErrorHandler::withErrorHeaders($request, [
+                    'RateLimit-Limit' => (string) self::LIMIT,
+                    'RateLimit-Remaining' => '0',
+                    'RateLimit-Reset' => (string) $resetAfter,
+                    'Retry-After' => (string) $resetAfter,
+                ]),
             );
         }
 
