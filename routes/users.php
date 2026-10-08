@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\UserController;
 use App\Middlewares\AuthenticationMiddleware;
+use App\Middlewares\RateLimitMiddleware;
 use App\Middlewares\RbacMiddleware;
 use Laminas\Db\Adapter\Adapter;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -37,5 +38,7 @@ return function (App $app) {
         $group->map(['POST', 'PATCH'], $id, [UserController::class, 'update'])->add($authorize('update user'));
         $group->put($id, [UserController::class, 'upsert'])->add($authorize('update user'));
         $group->delete($id, [UserController::class, 'delete'])->add($authorize('delete user'));
-    })->add(AuthenticationMiddleware::class);
+    })
+    ->add(AuthenticationMiddleware::class)
+    ->add(RateLimitMiddleware::class);
 };
