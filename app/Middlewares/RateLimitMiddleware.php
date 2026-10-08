@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Middlewares;
 
 use App\Handlers\ErrorHandler;
-use App\Sql\RateLimitUpsert;
-use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\Sql\Sql;
+use Predis\ClientInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -16,12 +14,7 @@ use Slim\Exception\HttpTooManyRequestsException;
 
 class RateLimitMiddleware implements MiddlewareInterface
 {
-    private Sql $sql;
-
-    public function __construct(Adapter $db)
-    {
-        $this->sql = new Sql($db);
-    }
+    public function __construct(private ClientInterface $redis) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -38,46 +31,37 @@ class RateLimitMiddleware implements MiddlewareInterface
         $windowStart = intdiv($now, $config['window']) * $config['window'];
         $resetAfter = ($windowStart + $config['window']) - $now;
         $ipHash = hash('sha256', $packedAddress);
+        $key = sprintf('rate-limit:%s:%d', $ipHash, $windowStart);
 
-        $deleteExpired = $this->sql
-            ->delete('api_rate_limits')
-            ->where(['window_start < ?' => $windowStart]);
+        $requestCount = $this->redis->eval(
+            <<<'LUA'
+local current = tonumber(redis.call('GET', KEYS[1]) or '0')
+local limit = tonumber(ARGV[1])
 
-        $this->sql
-            ->prepareStatementForSqlObject($deleteExpired)
-            ->execute();
+if current >= limit then
+    return -1
+end
 
-        $upsert = (new RateLimitUpsert($config['limit']))
-            ->values([
-                'ip_hash' => $ipHash,
-                'window_start' => $windowStart,
-                'request_count' => 1,
-            ]);
+current = redis.call('INCR', KEYS[1])
 
-        $result = $this->sql
-            ->prepareStatementForSqlObject($upsert)
-            ->execute();
+if current == 1 then
+    redis.call('EXPIRE', KEYS[1], ARGV[2])
+end
 
-        $blocked = $result->getAffectedRows() === 0;
-        $requestCount = $config['limit'];
+return current
+LUA,
+            1,
+            $key,
+            (string) $config['limit'],
+            (string) $resetAfter
+        );
 
-        if (!$blocked) {
-            $select = $this->sql
-                ->select('api_rate_limits')
-                ->columns(['request_count'])
-                ->where(['ip_hash' => $ipHash]);
-            $row = $this->sql
-                ->prepareStatementForSqlObject($select)
-                ->execute()
-                ->current();
-
-            if ($row === false || $row === null) {
-                throw new \RuntimeException('Unable to read the current API rate limit counter.');
-            }
-
-            $requestCount = (int) $row['request_count'];
+        if (!is_int($requestCount)) {
+            throw new \RuntimeException('Unable to update the API rate limit counter in Redis.');
         }
 
+        $blocked = $requestCount === -1;
+        $requestCount = $blocked ? $config['limit'] : $requestCount;
         $remaining = max(0, $config['limit'] - $requestCount);
 
         $headers = [

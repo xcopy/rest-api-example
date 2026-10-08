@@ -23,7 +23,8 @@
         "beberlei/assert": "^3.3",
         "middlewares/trailing-slash": "^2.1",
         "leafs/form": "^5.0",
-        "vlucas/phpdotenv": "^5.7"
+        "vlucas/phpdotenv": "^5.7",
+        "predis/predis": "^3.6"
     },
     "require-dev": {
         "symfony/var-dumper": "^7.4",

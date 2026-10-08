@@ -6,6 +6,8 @@ use DI\ContainerBuilder;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use Leaf\Form;
+use Predis\Client;
+use Predis\ClientInterface;
 use Psr\Container\ContainerInterface;
 
 $containerBuilder = new ContainerBuilder();
@@ -20,6 +22,30 @@ $containerBuilder->addDefinitions([
         $adapter->query('PRAGMA foreign_keys = ON;')->execute();
 
         return $adapter;
+    },
+    ClientInterface::class => function (): ClientInterface {
+        $config = require BASE_PATH . '/config/redis.php';
+
+        $parameters = [
+            'scheme' => 'tcp',
+            'host' => $config['host'],
+            'port' => $config['port'],
+            'timeout' => $config['timeout'],
+            'read_write_timeout' => $config['timeout'],
+            'database' => $config['database'],
+        ];
+
+        if ($config['username'] !== null && $config['username'] !== '') {
+            $parameters['username'] = $config['username'];
+        }
+
+        if ($config['password'] !== null && $config['password'] !== '') {
+            $parameters['password'] = $config['password'];
+        }
+
+        return new Client($parameters, [
+            'prefix' => $config['prefix'],
+        ]);
     },
     'db' => \DI\get(Adapter::class),
     Form::class => function (ContainerInterface $container) {
