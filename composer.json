@@ -28,7 +28,8 @@
     },
     "require-dev": {
         "symfony/var-dumper": "^7.4",
-        "friendsofphp/php-cs-fixer": "^3.95"
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "phpstan/phpstan": "^2.3"
     },
     "scripts": {
         "db:fresh": [
@@ -37,6 +38,12 @@
         ],
         "db:seed": [
             "vendor/bin/phinx seed:run -s UserSeeder -s RoleSeeder -s PermissionSeeder -s PermissionRoleSeeder -s RoleUserSeeder"
+        ],
+        "fix": [
+            "vendor/bin/php-cs-fixer fix"
+        ],
+        "analyse": [
+            "vendor/bin/phpstan analyse --error-format=table --no-progress > phpstan-report.txt || true"
         ]
     }
 }
