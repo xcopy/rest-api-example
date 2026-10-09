@@ -4,6 +4,9 @@ namespace App\Validators;
 
 class UserValidator extends BaseValidator
 {
+    /**
+     * @inheritDoc
+     */
     protected function rules(string $scenario, array $context = []): array
     {
         $currentUserId = $context['user_id'] ?? null;

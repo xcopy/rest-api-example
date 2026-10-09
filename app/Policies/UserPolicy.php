@@ -78,12 +78,12 @@ class UserPolicy
     private function isAdmin(int $userId): bool
     {
         $select = $this->sql
-            ->select(['r' => 'roles'])
+            ->select('roles')
             ->columns(['id'])
-            ->join(['ru' => 'role_user'], 'ru.role_id = r.id', [])
+            ->join('role_user', 'role_user.role_id = roles.id', [])
             ->where([
-                'ru.user_id' => $userId,
-                'r.name' => 'admin',
+                'role_user.user_id' => $userId,
+                'roles.name' => 'admin',
             ])
             ->limit(1);
 

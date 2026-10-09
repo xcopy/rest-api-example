@@ -32,12 +32,12 @@ class AuthenticationMiddleware implements MiddlewareInterface
         $token_hash = hash('sha256', $matches[1]);
 
         $select = $this->sql
-            ->select(['t' => 'user_tokens'])
+            ->select('user_tokens')
             ->columns([])
-            ->join(['u' => 'users'], 't.user_id = u.id', ['id'])
+            ->join('users', 'user_tokens.user_id = users.id', ['id'])
             ->where([
-                't.token_hash' => $token_hash,
-                't.expires_at > ?' => gmdate('Y-m-d H:i:s'),
+                'user_tokens.token_hash' => $token_hash,
+                'user_tokens.expires_at > ?' => gmdate('Y-m-d H:i:s'),
             ])
             ->limit(1);
 

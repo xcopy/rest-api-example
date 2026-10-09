@@ -81,6 +81,7 @@ class UserController
         return JsonResponse::write($response, $data);
     }
 
+    /** @param array<string, string> $args */
     public function show(Request $request, Response $response, array $args): Response
     {
         $id = $args['id'] ?? null;
@@ -127,6 +128,7 @@ class UserController
         return JsonResponse::write($response, $user, 201);
     }
 
+    /** @param array<string, string> $args */
     public function update(Request $request, Response $response, array $args): Response
     {
         $id = $args['id'] ?? null;
@@ -159,6 +161,7 @@ class UserController
         return JsonResponse::write($response, status: 204);
     }
 
+    /** @param array<string, string> $args */
     public function upsert(Request $request, Response $response, array $args): Response
     {
         $id = $args['id'] ?? null;
@@ -213,6 +216,7 @@ class UserController
         );
     }
 
+    /** @param array<string, string> $args */
     public function delete(Request $request, Response $response, array $args): Response
     {
         $id = $args['id'] ?? null;
@@ -261,6 +265,7 @@ class UserController
             ->execute();
     }
 
+    /** @return array<string, mixed> */
     private function findUser(Request $request, int|string|null $id): array
     {
         $select = (clone $this->baseSelect)

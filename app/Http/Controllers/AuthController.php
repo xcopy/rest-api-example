@@ -50,7 +50,7 @@ class AuthController
             throw new HttpUnauthorizedException($request, 'Invalid email or password.');
         }
 
-        $config = require BASE_PATH . '/config/auth.php';
+        $config = require dirname(__DIR__, 3) . '/config/auth.php';
 
         $token = bin2hex(random_bytes(32));
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));

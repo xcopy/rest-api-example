@@ -8,6 +8,7 @@ abstract class BaseValidator
 {
     protected Form $form;
 
+    /** @var array<string, string|list<string>> */
     protected array $errors = [];
 
     public function __construct(Form $form)
@@ -15,8 +16,17 @@ abstract class BaseValidator
         $this->form = $form;
     }
 
+    /**
+     * @param array<string, mixed> $context
+     * @return array<string, string>
+     */
     abstract protected function rules(string $scenario, array $context = []): array;
 
+    /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>|false
+     */
     public function validate(array $data, string $scenario = 'create', array $context = []): array|false
     {
         $rules = $this->rules($scenario, $context);
@@ -32,6 +42,7 @@ abstract class BaseValidator
         return $result;
     }
 
+    /** @return array<string, string|list<string>> */
     public function getErrors(): array
     {
         return $this->errors;

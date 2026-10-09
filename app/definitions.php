@@ -21,7 +21,7 @@ return [
         return $adapter;
     },
     ClientInterface::class => function (): ClientInterface {
-        $config = require __DIR__ . '/../config/redis.php';
+        $config = require dirname(__DIR__) . '/config/redis.php';
 
         $parameters = [
             'scheme' => 'tcp',
@@ -52,7 +52,7 @@ return [
 
             $params = explode(',', $param);
 
-            $table = $params[0] ?? null;
+            $table = $params[0];
             $currentUserId = $params[1] ?? null;
 
             $select = $sql

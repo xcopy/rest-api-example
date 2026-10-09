@@ -10,6 +10,7 @@ class ErrorHandler extends \Slim\Handlers\ErrorHandler
 {
     private const ATTRIBUTE = 'exception_headers';
 
+    /** @param array<string, string> $headers */
     public static function withErrorHeaders(
         ServerRequestInterface $request,
         array $headers,

@@ -29,13 +29,13 @@ class RbacMiddleware implements MiddlewareInterface
         }
 
         $select = $this->sql
-            ->select(['p' => 'permissions'])
+            ->select('permissions')
             ->columns(['id'])
-            ->join(['pr' => 'permission_role'], 'pr.permission_id = p.id', [])
-            ->join(['ru' => 'role_user'], 'ru.role_id = pr.role_id', [])
+            ->join('permission_role', 'permission_role.permission_id = permissions.id', [])
+            ->join('role_user', 'role_user.role_id = permission_role.role_id', [])
             ->where([
-                'ru.user_id' => $user_id,
-                'p.name' => $this->permission,
+                'role_user.user_id' => $user_id,
+                'permissions.name' => $this->permission,
             ])
             ->limit(1);
 

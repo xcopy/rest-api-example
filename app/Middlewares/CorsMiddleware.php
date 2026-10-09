@@ -14,7 +14,7 @@ class CorsMiddleware implements MiddlewareInterface
 {
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $config = require BASE_PATH . '/config/cors.php';
+        $config = require dirname(__DIR__, 2) . '/config/cors.php';
 
         $origin = $request->getHeaderLine('Origin');
         $allowed = $origin !== '' && in_array($origin, $config['allowed_origins']);
