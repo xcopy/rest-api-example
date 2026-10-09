@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use DI\ContainerBuilder;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use Leaf\Form;
@@ -10,9 +9,7 @@ use Predis\Client;
 use Predis\ClientInterface;
 use Psr\Container\ContainerInterface;
 
-$containerBuilder = new ContainerBuilder();
-$containerBuilder->useAutowiring(true);
-$containerBuilder->addDefinitions([
+return [
     Adapter::class => function () {
         $adapter = new Adapter([
             'driver'   => 'Pdo_Sqlite',
@@ -24,7 +21,7 @@ $containerBuilder->addDefinitions([
         return $adapter;
     },
     ClientInterface::class => function (): ClientInterface {
-        $config = require BASE_PATH . '/config/redis.php';
+        $config = require __DIR__ . '/../config/redis.php';
 
         $parameters = [
             'scheme' => 'tcp',
@@ -47,7 +44,6 @@ $containerBuilder->addDefinitions([
             'prefix' => $config['prefix'],
         ]);
     },
-    'db' => \DI\get(Adapter::class),
     Form::class => function (ContainerInterface $container) {
         $form = new Form();
 
@@ -77,6 +73,4 @@ $containerBuilder->addDefinitions([
 
         return $form;
     },
-]);
-
-return $containerBuilder->build();
+];
