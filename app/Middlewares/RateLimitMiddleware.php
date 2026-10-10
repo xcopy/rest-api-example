@@ -25,7 +25,7 @@ class RateLimitMiddleware implements MiddlewareInterface
             throw new \RuntimeException('A valid client IP address is required for rate limiting.');
         }
 
-        $config = require dirname(__DIR__, 2) . '/config/rate-limit.php';
+        $config = require APP_BASE_PATH . '/config/rate-limit.php';
 
         $now = time();
         $windowStart = intdiv($now, $config['window']) * $config['window'];
