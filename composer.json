@@ -33,17 +33,17 @@
     },
     "scripts": {
         "db:fresh": [
-            "vendor/bin/phinx rollback -t 0",
-            "vendor/bin/phinx migrate"
+            "vendor/bin/phinx rollback -t 0 -c .phinx.php",
+            "vendor/bin/phinx migrate -c .phinx.php"
         ],
         "db:seed": [
-            "vendor/bin/phinx seed:run -s UserSeeder -s RoleSeeder -s PermissionSeeder -s PermissionRoleSeeder -s RoleUserSeeder"
+            "vendor/bin/phinx seed:run -c .phinx.php -s UserSeeder -s RoleSeeder -s PermissionSeeder -s PermissionRoleSeeder -s RoleUserSeeder"
         ],
         "fix": [
             "vendor/bin/php-cs-fixer fix"
         ],
         "analyse": [
-            "vendor/bin/phpstan analyse --error-format=table --no-progress > phpstan-report.txt || true"
+            "vendor/bin/phpstan analyse --error-format=table --no-progress > .phpstan-report.txt || true"
         ]
     }
 }
