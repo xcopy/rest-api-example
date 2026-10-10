@@ -11,17 +11,19 @@ use Psr\Container\ContainerInterface;
 
 return [
     Adapter::class => function () {
-        $adapter = new Adapter([
-            'driver'   => 'Pdo_Sqlite',
-            'database' => __DIR__ . '/../db/db.sqlite3',
-        ]);
+        $app = require APP_BASE_PATH . '/config/app.php';
+        $db = require APP_BASE_PATH . '/config/db.php';
 
-        $adapter->query('PRAGMA foreign_keys = ON;')->execute();
+        $adapter = new Adapter($db[$app['env']]);
+
+        if ($app['env'] === 'local') {
+            $adapter->query('PRAGMA foreign_keys = ON;')->execute();
+        }
 
         return $adapter;
     },
-    ClientInterface::class => function (): ClientInterface {
-        $config = require dirname(__DIR__) . '/config/redis.php';
+    ClientInterface::class => function () {
+        $config = require APP_BASE_PATH . '/config/redis.php';
 
         $parameters = [
             'scheme' => 'tcp',
