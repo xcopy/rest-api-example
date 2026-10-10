@@ -133,7 +133,7 @@ class UserController
     {
         $id = $args['id'] ?? null;
 
-        $user = $this->findUser($request, $id);
+        $this->findUser($request, $id);
 
         $this->policy->assertCanUpdate($request, (int) $id);
 
@@ -165,12 +165,11 @@ class UserController
     public function upsert(Request $request, Response $response, array $args): Response
     {
         $id = $args['id'] ?? null;
+        $exists = true;
 
         try {
-            $user = $this->findUser($request, $id);
-            $exists = true;
+            $this->findUser($request, $id);
         } catch (HttpNotFoundException) {
-            $user = null;
             $exists = false;
         }
 
