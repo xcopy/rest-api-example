@@ -7,7 +7,6 @@ use Laminas\Db\Sql\Sql;
 use Leaf\Form;
 use Predis\Client;
 use Predis\ClientInterface;
-use Psr\Container\ContainerInterface;
 
 return [
     Adapter::class => function () {
@@ -46,11 +45,11 @@ return [
             'prefix' => $config['prefix'],
         ]);
     },
-    Form::class => function (ContainerInterface $container) {
+    Form::class => function (Adapter $db) {
         $form = new Form();
 
-        $form->rule('unique', function ($value, $param, $field) use ($container) {
-            $sql = new Sql($container->get('db'));
+        $form->rule('unique', function ($value, $param, $field) use ($db) {
+            $sql = new Sql($db);
 
             $params = explode(',', $param);
 
