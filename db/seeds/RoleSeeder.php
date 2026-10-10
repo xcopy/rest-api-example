@@ -16,11 +16,11 @@ class RoleSeeder extends AbstractSeed
      */
     public function run(): void
     {
-        $table = $this->table('roles');
+        $this->execute('delete from permission_role');
+        $this->execute('delete from role_user');
+        $this->execute('delete from roles');
 
-        $table->truncate();
-
-        $table
+        $this->table('roles')
             ->insert([
                 ['name' => 'admin'],
                 ['name' => 'user'],

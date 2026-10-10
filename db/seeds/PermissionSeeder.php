@@ -16,11 +16,10 @@ class PermissionSeeder extends AbstractSeed
      */
     public function run(): void
     {
-        $table = $this->table('permissions');
+        $this->execute('delete from permission_role');
+        $this->execute('delete from permissions');
 
-        $table->truncate();
-
-        $table
+        $this->table('permissions')
             ->insert([
                 ['name' => 'list users'],
                 ['name' => 'show user'],

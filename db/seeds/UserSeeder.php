@@ -41,10 +41,12 @@ class UserSeeder extends AbstractSeed
             ];
         }
 
-        $table = $this->table('users');
+        $this->execute('delete from user_tokens');
+        $this->execute('delete from role_user');
+        $this->execute('delete from users');
 
-        $table->truncate();
-
-        $table->insert($data)->saveData();
+        $this->table('users')
+            ->insert($data)
+            ->saveData();
     }
 }
