@@ -1,6 +1,6 @@
 vendor
 db/db*.sqlite3
-/.php-cs-fixer.cache
-/.php-cs-fixer.php
 .env
+.php-cs-fixer.cache
+.php-cs-fixer.php
 .phpstan-report.txt
