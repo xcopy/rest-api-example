@@ -25,12 +25,14 @@
         "leafs/form": "^5.0",
         "vlucas/phpdotenv": "^5.7",
         "predis/predis": "^3.6",
-        "monolog/monolog": "^3.12"
+        "monolog/monolog": "^3.12",
+        "symfony/mailer": "^7.1"
     },
     "require-dev": {
         "symfony/var-dumper": "^7.4",
         "friendsofphp/php-cs-fixer": "^3.95",
-        "phpstan/phpstan": "^2.3"
+        "phpstan/phpstan": "^2.3",
+        "psy/psysh": "^0.12.24"
     },
     "scripts": {
         "db:fresh": [

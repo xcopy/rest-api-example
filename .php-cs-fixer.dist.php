@@ -16,6 +16,7 @@ $finder = (new Finder())
 return (new Config())
     ->setRules([
         '@PER-CS' => true,
+        'declare_strict_types' => true,
         'ordered_imports' => ['sort_algorithm' => 'alpha'],
         'no_unused_imports' => true,
         'no_extra_blank_lines' => [

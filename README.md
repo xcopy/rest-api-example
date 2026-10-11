@@ -1,6 +1,6 @@
 # REST API Example
 
-Slim 4 REST API with token authentication, role-based access control, CORS, and Redis-backed rate limiting.
+Slim 4 REST API with token authentication, email verification, role-based access control, CORS, and Redis-backed rate limiting.
 
 ## Setup
 
@@ -14,13 +14,17 @@ composer db:seed
 php -S localhost:8000 -t public
 ```
 
-The local environment uses SQLite at `db/db.sqlite3`. Seeding replaces the sample users and role/permission assignments. Configure Redis and other settings in `.env`.
+The local environment uses SQLite at `db/db.sqlite3`. Seeding replaces the sample users and role/permission assignments. Configure Redis and other settings in `.env`. In the local environment, sent emails are written as `.eml` files to `logs/mail`; other environments use the transport configured by `MAILER_DSN`.
 
 ## Endpoints
 
 - `POST /auth/login`, `POST /auth/logout`, `POST /auth/logout-all`
+- `POST /auth/verify-email` with `{"token":"<token from email>"}`
+- `POST /auth/resend-verification` with `{"email":"user@example.com"}`
 - `/users` — authenticated, permission-protected user CRUD
 
 Use the access token returned by login as a Bearer token for protected endpoints.
+
+New users must verify their email before login. Verification tokens expire according to `AUTH_EMAIL_VERIFICATION_TTL`; requesting a replacement token invalidates earlier tokens. Changing a user's email address requires verification again and revokes that user's existing access tokens. The resend endpoint returns `404` when the account does not exist and `422` when its email address is already verified.
 
 Database migrations and seeders are managed with Phinx. Set `APP_ENV=production` and configure the `MYSQL_*` variables in `.env` to use MySQL.

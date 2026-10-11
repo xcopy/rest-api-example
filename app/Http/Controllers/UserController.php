@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Policies\UserPolicy;
+use App\Services\EmailVerificationService;
 use App\Validators\UserValidator;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Expression;
@@ -25,14 +28,14 @@ class UserController
 
     private UserPolicy $policy;
 
-    public function __construct(Adapter $db, Form $form)
+    public function __construct(Adapter $db, Form $form, private EmailVerificationService $emailVerification)
     {
         $this->sql = new Sql($db);
         $this->policy = new UserPolicy($db);
 
         $this->baseSelect = $this->sql
             ->select('users')
-            ->columns(['id', 'email', 'first_name', 'last_name']);
+            ->columns(['id', 'email', 'first_name', 'last_name', 'email_verified_at']);
 
         $this->validator = new UserValidator($form);
     }
@@ -125,6 +128,12 @@ class UserController
             ->execute()
             ->current();
 
+        if ($user === false) {
+            throw new \RuntimeException('The newly created user could not be loaded.');
+        }
+
+        $this->emailVerification->sendVerification($user_id, $user['email']);
+
         return JsonResponse::write($response, $user, 201);
     }
 
@@ -133,7 +142,7 @@ class UserController
     {
         $id = $args['id'] ?? null;
 
-        $this->findUser($request, $id);
+        $user = $this->findUser($request, $id);
 
         $this->policy->assertCanUpdate($request, (int) $id);
 
@@ -147,6 +156,12 @@ class UserController
             throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
         }
 
+        $emailChanged = isset($data['email']) && $data['email'] !== $user['email'];
+
+        if ($emailChanged) {
+            $data['email_verified_at'] = null;
+        }
+
         $data['updated_at'] = date('Y-m-d H:i:s');
 
         $update = $this->sql
@@ -158,6 +173,10 @@ class UserController
             ->prepareStatementForSqlObject($update)
             ->execute();
 
+        if ($emailChanged) {
+            $this->emailVerification->sendVerification((int) $id, $data['email']);
+        }
+
         return JsonResponse::write($response, status: 204);
     }
 
@@ -165,13 +184,15 @@ class UserController
     public function upsert(Request $request, Response $response, array $args): Response
     {
         $id = $args['id'] ?? null;
-        $exists = true;
+        $currentUser = null;
 
         try {
-            $this->findUser($request, $id);
+            $currentUser = $this->findUser($request, $id);
         } catch (HttpNotFoundException) {
-            $exists = false;
+            $currentUser = null;
         }
+
+        $exists = $currentUser !== null;
 
         if ($exists) {
             $this->policy->assertCanUpdate($request, (int) $id);
@@ -188,7 +209,15 @@ class UserController
             throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
         }
 
+        $emailChanged = $exists
+            && isset($data['email'])
+            && $data['email'] !== $currentUser['email'];
+
         if ($exists) {
+            if ($emailChanged) {
+                $data['email_verified_at'] = null;
+            }
+
             $data['updated_at'] = date('Y-m-d H:i:s');
         } else {
             $data['id'] = $id;
@@ -206,6 +235,13 @@ class UserController
 
         if (!$exists) {
             $this->assignDefaultRole((int) $id);
+        }
+
+        if ($emailChanged) {
+            $this->emailVerification->sendVerification((int) $id, $data['email']);
+        } elseif (!$exists) {
+            $user = $this->findUser($request, $id);
+            $this->emailVerification->sendVerification((int) $id, $user['email']);
         }
 
         return JsonResponse::write(

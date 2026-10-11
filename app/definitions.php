@@ -2,13 +2,27 @@
 
 declare(strict_types=1);
 
+use App\Mailer\FileTransport;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use Leaf\Form;
 use Predis\Client;
 use Predis\ClientInterface;
+use Symfony\Component\Mailer\Mailer;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mailer\Transport;
 
 return [
+    MailerInterface::class => function () {
+        $app = require APP_BASE_PATH . '/config/app.php';
+        $config = require APP_BASE_PATH . '/config/mail.php';
+
+        $transport = $app['env'] === 'local'
+            ? new FileTransport(APP_BASE_PATH . '/logs/mail')
+            : Transport::fromDsn($config['dsn']);
+
+        return new Mailer($transport);
+    },
     Adapter::class => function () {
         $app = require APP_BASE_PATH . '/config/app.php';
         $db = require APP_BASE_PATH . '/config/db.php';

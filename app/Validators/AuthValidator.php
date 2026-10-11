@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Validators;
 
 class AuthValidator extends BaseValidator
@@ -9,9 +11,13 @@ class AuthValidator extends BaseValidator
      */
     protected function rules(string $scenario, array $context = []): array
     {
-        return [
-            'email' => 'email',
-            'password' => 'string',
-        ];
+        return match ($scenario) {
+            'verify-email' => ['token' => 'string'],
+            'send-verification' => ['email' => 'email'],
+            default => [
+                'email' => 'email',
+                'password' => 'string',
+            ]
+        };
     }
 }

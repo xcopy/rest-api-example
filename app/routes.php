@@ -11,23 +11,32 @@ use Laminas\Db\Adapter\Adapter;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
-return function (App $app) {
+$lowerFilter = new LowerFilterMiddleware('email');
+
+return function (App $app) use ($lowerFilter) {
     // auth
-    $app->group('/auth', function (RouteCollectorProxy $group) {
+    $app->group('/auth', function (RouteCollectorProxy $group) use ($lowerFilter) {
         $controllerClass = AuthController::class;
 
-        $group->post('/login', [$controllerClass, 'login']);
+        $group->post('/login', [$controllerClass, 'login'])
+            ->add($lowerFilter);
+        $group->post('/verify-email', [$controllerClass, 'verifyEmail']);
+        $group->post('/send-verification', [$controllerClass, 'sendVerification'])
+            ->add($lowerFilter);
+
+        $auth = AuthenticationMiddleware::class;
+
         $group
             ->post('/logout', [$controllerClass, 'logout'])
-            ->add(AuthenticationMiddleware::class);
+            ->add($auth);
         $group
             ->post('/logout-all', [$controllerClass, 'logoutAll'])
-            ->add(AuthenticationMiddleware::class);
+            ->add($auth);
     });
 
     // users
     $app
-        ->group('/users', function (RouteCollectorProxy $group) {
+        ->group('/users', function (RouteCollectorProxy $group) use ($lowerFilter) {
             $controllerClass = UserController::class;
             $id = '/{id:[0-9]+}';
 
@@ -35,8 +44,6 @@ return function (App $app) {
                 $group->getContainer()->get(Adapter::class),
                 $permission
             );
-
-            $lowerFilter = new LowerFilterMiddleware('email');
 
             $group->get('', [$controllerClass, 'index'])->add($authorize('list users'));
             $group->get($id, [$controllerClass, 'show'])->add($authorize('show user'));
