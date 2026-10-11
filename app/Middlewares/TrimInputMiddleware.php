@@ -19,9 +19,10 @@ class TrimInputMiddleware implements MiddlewareInterface
      */
     public function __construct(array $except = [
         'password',
-        'repeat_password',
+        'password_repeat',
         'current_password',
         'new_password',
+        'new_password_repeat',
     ])
     {
         $this->except = array_fill_keys(array_map('strtolower', $except), true);

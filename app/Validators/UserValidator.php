@@ -15,7 +15,8 @@ class UserValidator extends BaseValidator
 
         $rules = [
             'email' => "email|unique:users,$currentUserId",
-            'password' => 'min:8',
+            'password' => 'string|min:8',
+            'password_repeat' => 'matchesvalueof<password>',
             'first_name' => 'text|min:3|max:100',
             'last_name' => 'text|min:3|max:100',
         ];

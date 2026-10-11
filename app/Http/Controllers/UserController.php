@@ -108,6 +108,8 @@ class UserController
 
         $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
 
+        unset($data['password_repeat']);
+
         $insert = $this->sql
             ->insert('users')
             ->values($data);
@@ -224,6 +226,8 @@ class UserController
         }
 
         $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+
+        unset($data['password_repeat']);
 
         $sql = $exists
             ? $this->sql->update('users')->set($data)->where(compact('id'))
