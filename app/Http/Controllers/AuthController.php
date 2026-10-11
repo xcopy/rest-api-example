@@ -23,10 +23,14 @@ class AuthController
 
     private AuthValidator $validator;
 
+    /** @var array<string, string> */
+    private array $config;
+
     public function __construct(Adapter $db, Form $form, private EmailVerificationService $emailVerification)
     {
         $this->sql = new Sql($db);
         $this->validator = new AuthValidator($form);
+        $this->config = require APP_BASE_PATH . '/config/app.php';
     }
 
     public function login(Request $request, Response $response): Response
@@ -129,9 +133,7 @@ class AuthController
 
         $this->emailVerification->sendVerification((int) $user['id'], $user['email'], $token);
 
-        $config = require APP_BASE_PATH . '/config/app.php';
-
-        $data = $config['env'] === 'local' ? compact('token') : null;
+        $data = $this->config['env'] === 'local' ? compact('token') : null;
 
         return JsonResponse::write($response, $data, 202);
     }
@@ -160,5 +162,94 @@ class AuthController
             ->execute();
 
         return JsonResponse::write($response, status: 204);
+    }
+
+    public function changePassword(Request $request, Response $response): Response
+    {
+        $data = $this->validator->validate($request->getParsedBody() ?? [], 'change-password');
+
+        if ($data === false) {
+            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
+        }
+
+        $user_id = (int) $request->getAttribute('user_id');
+
+        $select = $this->sql
+            ->select('users')
+            ->columns(['password', 'password_changed_at'])
+            ->where(['id' => $user_id])
+            ->limit(1);
+
+        $user = $this->sql
+            ->prepareStatementForSqlObject($select)
+            ->execute()
+            ->current();
+
+        if ($user === false) {
+            throw new HttpUnauthorizedException($request);
+        }
+
+        if (!password_verify($data['current_password'], $user['password'])) {
+            throw new HttpUnprocessableEntityException($request, [
+                'current_password' => 'Current password is incorrect.',
+            ]);
+        }
+
+        $new_password = $data['new_password'];
+
+        if (password_verify($new_password, $user['password'])) {
+            throw new HttpUnprocessableEntityException($request, [
+                'new_password' => 'New password must be different from the current password.',
+            ]);
+        }
+
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $cooldownCutoff = $now->sub(new \DateInterval('PT24H'));
+        $cooldownException = new HttpUnprocessableEntityException($request, [
+            'new_password' => 'Password can only be changed once every 24 hours.',
+        ]);
+
+        if (
+            $user['password_changed_at'] !== null
+            && new \DateTimeImmutable($user['password_changed_at'], new \DateTimeZone('UTC')) > $cooldownCutoff
+        ) {
+            throw $cooldownException;
+        }
+
+        $update = $this->sql
+            ->update('users')
+            ->set([
+                'password' => password_hash($new_password, PASSWORD_DEFAULT),
+                'password_changed_at' => $now->format('Y-m-d H:i:s'),
+                'updated_at' => $now->format('Y-m-d H:i:s'),
+            ])
+            ->where(['id' => $user_id])
+            ->where(['(password_changed_at IS NULL OR password_changed_at <= ?)' => $cooldownCutoff->format('Y-m-d H:i:s')]);
+
+        $result = $this->sql
+            ->prepareStatementForSqlObject($update)
+            ->execute();
+
+        if ($result->getAffectedRows() !== 1) {
+            throw $cooldownException;
+        }
+
+        $revokeTokens = $this->sql
+            ->delete('user_tokens')
+            ->where(compact('user_id'));
+
+        $this->sql
+            ->prepareStatementForSqlObject($revokeTokens)
+            ->execute();
+
+        $isLocal = $this->config['env'] === 'local';
+
+        $data = $isLocal
+            ? ['password' => $new_password]
+            : null;
+
+        $status = $isLocal ? 200 : 204;
+
+        return JsonResponse::write($response, $data, $status);
     }
 }

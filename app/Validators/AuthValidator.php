@@ -14,6 +14,11 @@ class AuthValidator extends BaseValidator
         return match ($scenario) {
             'verify-email' => ['token' => 'string'],
             'send-verification' => ['email' => 'email'],
+            'change-password' => [
+                'current_password' => 'string|min:1',
+                'new_password' => 'string|min:8',
+                'new_password_repeat' => 'matchesvalueof<new_password>',
+            ],
             default => [
                 'email' => 'email',
                 'password' => 'string',

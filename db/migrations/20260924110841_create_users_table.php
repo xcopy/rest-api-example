@@ -14,6 +14,7 @@ final class CreateUsersTable extends AbstractMigration
             ->addColumn('first_name', 'string', ['null' => false])
             ->addColumn('last_name', 'string', ['null' => false])
             ->addColumn('email_verified_at', 'datetime', ['null' => true])
+            ->addColumn('password_changed_at', 'datetime', ['null' => true])
             ->addTimestamps()
             ->addIndex(['email'], ['unique' => true])
             ->create();

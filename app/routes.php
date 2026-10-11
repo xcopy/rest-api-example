@@ -32,6 +32,9 @@ return function (App $app) use ($lowerFilter) {
         $group
             ->post('/logout-all', [$controllerClass, 'logoutAll'])
             ->add($auth);
+        $group
+            ->post('/change-password', [$controllerClass, 'changePassword'])
+            ->add($auth);
     });
 
     // users

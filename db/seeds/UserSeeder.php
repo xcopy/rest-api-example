@@ -19,6 +19,7 @@ class UserSeeder extends AbstractSeed
                 'first_name' => 'Kairat',
                 'last_name' => 'Jenihev',
                 'password' => $password,
+                'email_verified_at' => gmdate('Y-m-d H:i:s'),
             ],
         ];
 
