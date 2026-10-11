@@ -6,6 +6,7 @@ use App\Error\Renderers\JsonErrorRenderer;
 use App\Handlers\ErrorHandler;
 use App\Middlewares\CorsMiddleware;
 use App\Middlewares\RateLimitMiddleware;
+use App\Middlewares\TrimInputMiddleware;
 use Middlewares\TrailingSlash;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
@@ -16,6 +17,7 @@ use Slim\Middleware\ContentLengthMiddleware;
 
 return function (App $app) {
     // Order matters: LIFO (Last-In, First-Out)
+    $app->add(TrimInputMiddleware::class);
     $app->addBodyParsingMiddleware();
     $app->addRoutingMiddleware();
     $app->add(ContentLengthMiddleware::class);

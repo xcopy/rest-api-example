@@ -68,9 +68,7 @@ return [
             $results = $sql->prepareStatementForSqlObject($select)->execute();
 
             return $results->count() === 0;
-        });
-
-        $form->message('unique', 'The value for the field {field} is already taken');
+        }, 'The value for the field {field} is already taken');
 
         return $form;
     },
