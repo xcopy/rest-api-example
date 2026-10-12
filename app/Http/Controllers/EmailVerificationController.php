@@ -9,13 +9,15 @@ use App\Http\JsonResponse;
 use App\Services\EmailVerificationService;
 use App\Validators\BaseValidator;
 use App\Validators\EmailVerificationValidator;
+use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpNotFoundException;
 
 class EmailVerificationController extends ValidatingController
 {
-    public function __construct(private EmailVerificationService $emailVerification) {}
+    #[Inject]
+    protected EmailVerificationService $emailVerification;
 
     protected function getValidator(): BaseValidator
     {

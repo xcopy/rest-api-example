@@ -11,6 +11,7 @@ use App\Services\EmailVerificationService;
 use App\Services\PasswordService;
 use App\Validators\BaseValidator;
 use App\Validators\UserValidator;
+use DI\Attribute\Inject;
 use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Select;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -22,10 +23,11 @@ class UserController extends ValidatingController
 {
     private ?Select $baseSelect = null;
 
-    public function __construct(
-        private EmailVerificationService $emailVerification,
-        private UserPolicy $policy
-    ) {}
+    #[Inject]
+    protected EmailVerificationService $emailVerification;
+
+    #[Inject]
+    protected UserPolicy $policy;
 
     protected function getValidator(): BaseValidator
     {

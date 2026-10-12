@@ -6,7 +6,7 @@ namespace App\Middlewares;
 
 use App\Services\DateTimeService;
 use App\Services\TokenService;
-use Laminas\Db\Adapter\Adapter;
+use DI\Attribute\Inject;
 use Laminas\Db\Sql\Sql;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -16,12 +16,8 @@ use Slim\Exception\HttpUnauthorizedException;
 
 class AuthenticationMiddleware implements MiddlewareInterface
 {
-    private Sql $sql;
-
-    public function __construct(Adapter $db)
-    {
-        $this->sql = new Sql($db);
-    }
+    #[Inject]
+    protected Sql $sql;
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {

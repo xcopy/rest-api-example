@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use DateTimeImmutable;
+use DI\Attribute\Inject;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use Symfony\Component\Mailer\MailerInterface;
@@ -13,15 +14,17 @@ use Symfony\Component\Mime\Email;
 
 class PasswordService
 {
-    private Sql $sql;
+    #[Inject]
+    protected Adapter $db;
 
-    public function __construct(
-        private Adapter $db,
-        private MailerInterface $mailer,
-        private ConfigService $config
-    ) {
-        $this->sql = new Sql($db);
-    }
+    #[Inject]
+    protected Sql $sql;
+
+    #[Inject]
+    protected MailerInterface $mailer;
+
+    #[Inject]
+    protected ConfigService $config;
 
     public static function generateHash(string $password): string
     {

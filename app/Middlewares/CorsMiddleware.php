@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Middlewares;
 
 use App\Services\ConfigService;
+use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -13,7 +14,8 @@ use Slim\Psr7\Response;
 
 class CorsMiddleware implements MiddlewareInterface
 {
-    public function __construct(private ConfigService $config) {}
+    #[Inject]
+    protected ConfigService $config;
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {

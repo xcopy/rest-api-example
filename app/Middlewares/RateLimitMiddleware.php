@@ -8,6 +8,7 @@ use App\Handlers\ErrorHandler;
 use App\Services\ConfigService;
 use App\Services\DateTimeService;
 use App\Services\TokenService;
+use DI\Attribute\Inject;
 use Predis\ClientInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -18,10 +19,11 @@ use Slim\Exception\HttpTooManyRequestsException;
 
 class RateLimitMiddleware implements MiddlewareInterface
 {
-    public function __construct(
-        private ClientInterface $redis,
-        private ConfigService $config
-    ) {}
+    #[Inject]
+    protected ClientInterface $redis;
+
+    #[Inject]
+    protected ConfigService $config;
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {

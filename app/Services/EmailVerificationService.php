@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use Laminas\Db\Adapter\Adapter;
+use DI\Attribute\Inject;
 use Laminas\Db\Sql\Sql;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
@@ -12,15 +12,14 @@ use Symfony\Component\Mime\Email;
 
 class EmailVerificationService
 {
-    private Sql $sql;
+    #[Inject]
+    protected Sql $sql;
 
-    public function __construct(
-        Adapter $db,
-        private MailerInterface $mailer,
-        private ConfigService $config
-    ) {
-        $this->sql = new Sql($db);
-    }
+    #[Inject]
+    protected MailerInterface $mailer;
+
+    #[Inject]
+    protected ConfigService $config;
 
     public function send(int $user_id, string $email, ?string &$token = null): void
     {

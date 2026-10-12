@@ -11,13 +11,15 @@ use App\Services\PasswordService;
 use App\Validators\BaseValidator;
 use App\Validators\PasswordValidator;
 use DateInterval;
+use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpUnauthorizedException;
 
 class PasswordController extends ValidatingController
 {
-    public function __construct(private PasswordService $passwordService) {}
+    #[Inject]
+    protected PasswordService $passwordService;
 
     protected function getValidator(): BaseValidator
     {
