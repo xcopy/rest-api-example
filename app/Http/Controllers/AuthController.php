@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Services\EmailVerificationService;
+use App\Services\PasswordResetService;
 use App\Validators\AuthValidator;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
@@ -26,8 +27,12 @@ class AuthController
     /** @var array<string, string> */
     private array $config;
 
-    public function __construct(Adapter $db, Form $form, private EmailVerificationService $emailVerification)
-    {
+    public function __construct(
+        Adapter $db,
+        Form $form,
+        private EmailVerificationService $emailVerification,
+        private PasswordResetService $passwordReset
+    ) {
         $this->sql = new Sql($db);
         $this->validator = new AuthValidator($form);
         $this->config = require APP_BASE_PATH . '/config/app.php';
@@ -136,6 +141,53 @@ class AuthController
         $data = $this->config['env'] === 'local' ? compact('token') : null;
 
         return JsonResponse::write($response, $data, 202);
+    }
+
+    public function forgotPassword(Request $request, Response $response): Response
+    {
+        $data = $this->validator->validate($request->getParsedBody() ?? [], 'forgot-password');
+
+        if ($data === false) {
+            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
+        }
+
+        $select = $this->sql
+            ->select('users')
+            ->columns(['id', 'email'])
+            ->where(['email' => $data['email']])
+            ->limit(1);
+
+        $user = $this->sql
+            ->prepareStatementForSqlObject($select)
+            ->execute()
+            ->current();
+
+        $token = null;
+
+        if ($user !== false) {
+            $this->passwordReset->sendReset((int) $user['id'], $user['email'], $token);
+        }
+
+        $data = $this->config['env'] === 'local' ? compact('token') : null;
+
+        return JsonResponse::write($response, $data, 202);
+    }
+
+    public function resetPassword(Request $request, Response $response): Response
+    {
+        $data = $this->validator->validate($request->getParsedBody() ?? [], 'reset-password');
+
+        if ($data === false) {
+            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
+        }
+
+        if (!$this->passwordReset->resetPassword($data['token'], $data['new_password'])) {
+            throw new HttpUnprocessableEntityException($request, [
+                'token' => 'The password reset token is invalid or expired.',
+            ]);
+        }
+
+        return JsonResponse::write($response, status: 204);
     }
 
     public function logout(Request $request, Response $response): Response

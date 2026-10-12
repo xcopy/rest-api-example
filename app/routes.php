@@ -16,25 +16,31 @@ $lowerFilter = new LowerFilterMiddleware('email');
 return function (App $app) use ($lowerFilter) {
     // auth
     $app->group('/auth', function (RouteCollectorProxy $group) use ($lowerFilter) {
+        $auth = AuthenticationMiddleware::class;
         $controllerClass = AuthController::class;
 
-        $group->post('/login', [$controllerClass, 'login'])
+        $group
+            ->post('/login', [$controllerClass, 'login'])
             ->add($lowerFilter);
-        $group->post('/verify-email', [$controllerClass, 'verifyEmail']);
-        $group->post('/send-verification', [$controllerClass, 'sendVerification'])
-            ->add($lowerFilter);
-
-        $auth = AuthenticationMiddleware::class;
-
         $group
             ->post('/logout', [$controllerClass, 'logout'])
             ->add($auth);
         $group
             ->post('/logout-all', [$controllerClass, 'logoutAll'])
             ->add($auth);
+
+        $group->post('/verify-email', [$controllerClass, 'verifyEmail']);
+        $group
+            ->post('/send-verification', [$controllerClass, 'sendVerification'])
+            ->add($lowerFilter);
+
         $group
             ->post('/change-password', [$controllerClass, 'changePassword'])
             ->add($auth);
+        $group
+            ->post('/forgot-password', [$controllerClass, 'forgotPassword'])
+            ->add($lowerFilter);
+        $group->post('/reset-password', [$controllerClass, 'resetPassword']);
     });
 
     // users
