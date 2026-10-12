@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Middlewares;
 
 use App\Handlers\ErrorHandler;
+use App\Services\ConfigService;
 use App\Services\DateTimeService;
 use App\Services\TokenService;
 use Predis\ClientInterface;
@@ -17,7 +18,10 @@ use Slim\Exception\HttpTooManyRequestsException;
 
 class RateLimitMiddleware implements MiddlewareInterface
 {
-    public function __construct(private ClientInterface $redis) {}
+    public function __construct(
+        private ClientInterface $redis,
+        private ConfigService $config
+    ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -28,7 +32,7 @@ class RateLimitMiddleware implements MiddlewareInterface
             throw new RuntimeException('A valid client IP address is required for rate limiting.');
         }
 
-        $config = require APP_BASE_PATH . '/config/rate-limit.php';
+        $config = $this->config->get('rate-limit');
 
         $now = DateTimeService::now()->getTimestamp();
         $windowStart = intdiv($now, $config['window']) * $config['window'];

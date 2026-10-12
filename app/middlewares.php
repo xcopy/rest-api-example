@@ -7,6 +7,7 @@ use App\Handlers\ErrorHandler;
 use App\Middlewares\CorsMiddleware;
 use App\Middlewares\RateLimitMiddleware;
 use App\Middlewares\TrimInputMiddleware;
+use App\Services\ConfigService;
 use App\Services\DateTimeService;
 use Middlewares\TrailingSlash;
 use Monolog\Formatter\LineFormatter;
@@ -25,8 +26,13 @@ return function (App $app) {
     $app->add(TrailingSlash::class);
     $app->add(RateLimitMiddleware::class);
 
-    $config = require APP_BASE_PATH . '/config/app.php';
-    $isProduction = $config['env'] === 'production';
+    $config = $app->getContainer()?->get(ConfigService::class);
+
+    if (!$config instanceof ConfigService) {
+        throw new RuntimeException('The configuration service is not available.');
+    }
+
+    $isProduction = $config->get('app.env') === 'production';
 
     $stream = new RotatingFileHandler(
         APP_BASE_PATH . '/logs/app.log',

@@ -17,13 +17,7 @@ use Slim\Exception\HttpUnauthorizedException;
 
 class PasswordController extends ValidatingController
 {
-    /** @var array<string, string> */
-    private array $config;
-
-    public function __construct(private PasswordService $passwordService)
-    {
-        $this->config = require APP_BASE_PATH . '/config/app.php';
-    }
+    public function __construct(private PasswordService $passwordService) {}
 
     protected function getValidator(): BaseValidator
     {
@@ -82,7 +76,7 @@ class PasswordController extends ValidatingController
             throw $cooldownException;
         }
 
-        $isLocal = $this->config['env'] === 'local';
+        $isLocal = $this->config->get('app.env') === 'local';
 
         $data = $isLocal
             ? ['password' => $new_password]
@@ -115,7 +109,7 @@ class PasswordController extends ValidatingController
             $this->passwordService->sendReset((int) $user['id'], $user['email'], $token);
         }
 
-        $data = $this->config['env'] === 'local' ? compact('token') : null;
+        $data = $this->config->get('app.env') === 'local' ? compact('token') : null;
 
         return JsonResponse::write($response, $data, 202);
     }

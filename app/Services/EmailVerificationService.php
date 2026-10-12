@@ -14,13 +14,12 @@ class EmailVerificationService
 {
     private Sql $sql;
 
-    /** @var array{dsn: string, from_address: string, from_name: string, app_url: string, verification_ttl: string} */
-    private array $config;
-
-    public function __construct(Adapter $db, private MailerInterface $mailer)
-    {
+    public function __construct(
+        Adapter $db,
+        private MailerInterface $mailer,
+        private ConfigService $config
+    ) {
         $this->sql = new Sql($db);
-        $this->config = require APP_BASE_PATH . '/config/mail.php';
     }
 
     public function send(int $user_id, string $email, ?string &$token = null): void
@@ -38,7 +37,7 @@ class EmailVerificationService
             ->execute();
 
         $token = TokenService::generateToken();
-        $expiresAt = DateTimeService::now()->modify($this->config['verification_ttl']);
+        $expiresAt = DateTimeService::now()->modify($this->config->get('mail.verification_ttl'));
 
         $insert = $this->sql
             ->insert('email_verification_tokens')
@@ -52,10 +51,10 @@ class EmailVerificationService
             ->prepareStatementForSqlObject($insert)
             ->execute();
 
-        $verificationUrl = rtrim($this->config['app_url'], '/') . '/auth/verify-email';
+        $verificationUrl = rtrim($this->config->get('mail.app_url'), '/') . '/auth/verify-email';
 
         $message = (new Email())
-            ->from(new Address($this->config['from_address'], $this->config['from_name']))
+            ->from(new Address($this->config->get('mail.from_address'), $this->config->get('mail.from_name')))
             ->to($email)
             ->subject('Verify your email address')
             ->text(sprintf(

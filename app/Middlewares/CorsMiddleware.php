@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Middlewares;
 
+use App\Services\ConfigService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -12,10 +13,11 @@ use Slim\Psr7\Response;
 
 class CorsMiddleware implements MiddlewareInterface
 {
+    public function __construct(private ConfigService $config) {}
+
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $config = require APP_BASE_PATH . '/config/cors.php';
-
+        $config = $this->config->get('cors');
         $origin = $request->getHeaderLine('Origin');
         $allowed = $origin !== '' && in_array($origin, $config['allowed_origins']);
         $isPreflight = $request->getMethod() === 'OPTIONS'

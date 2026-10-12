@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Mailer\FileTransport;
+use App\Services\ConfigService;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use Leaf\Form;
@@ -13,23 +14,37 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mailer\Transport;
 
 return [
-    MailerInterface::class => function () {
-        $app = require APP_BASE_PATH . '/config/app.php';
-        $config = require APP_BASE_PATH . '/config/mail.php';
+    ConfigService::class => function () {
+        $values = [];
+        $files = glob(APP_BASE_PATH . '/config/*.php');
 
-        $transport = $app['env'] === 'local'
+        if ($files === false) {
+            throw new RuntimeException('Unable to load configuration files.');
+        }
+
+        foreach ($files as $file) {
+            $value = require $file;
+            if (!is_array($value)) {
+                throw new RuntimeException(sprintf('Configuration file "%s" must return an array.', $file));
+            }
+
+            $values[basename($file, '.php')] = $value;
+        }
+
+        return new ConfigService($values);
+    },
+    MailerInterface::class => function (ConfigService $config) {
+        $transport = $config->get('app.env') === 'local'
             ? new FileTransport(APP_BASE_PATH . '/logs/mail')
-            : Transport::fromDsn($config['dsn']);
+            : Transport::fromDsn($config->get('mail.dsn'));
 
         return new Mailer($transport);
     },
-    Adapter::class => function () {
-        $app = require APP_BASE_PATH . '/config/app.php';
-        $db = require APP_BASE_PATH . '/config/db.php';
+    Adapter::class => function (ConfigService $config) {
+        $environment = $config->get('app.env');
+        $adapter = new Adapter($config->get('db.' . $environment));
 
-        $adapter = new Adapter($db[$app['env']]);
-
-        if ($app['env'] === 'local') {
+        if ($environment === 'local') {
             $adapter->query('PRAGMA foreign_keys = ON;')->execute();
         }
 
@@ -38,28 +53,28 @@ return [
     Sql::class => function (Adapter $db) {
         return new Sql($db);
     },
-    ClientInterface::class => function () {
-        $config = require APP_BASE_PATH . '/config/redis.php';
-
+    ClientInterface::class => function (ConfigService $config) {
         $parameters = [
             'scheme' => 'tcp',
-            'host' => $config['host'],
-            'port' => $config['port'],
-            'timeout' => $config['timeout'],
-            'read_write_timeout' => $config['timeout'],
-            'database' => $config['database'],
+            'host' => $config->get('redis.host'),
+            'port' => $config->get('redis.port'),
+            'timeout' => $config->get('redis.timeout'),
+            'read_write_timeout' => $config->get('redis.timeout'),
+            'database' => $config->get('redis.database'),
         ];
 
-        if ($config['username'] !== null && $config['username'] !== '') {
-            $parameters['username'] = $config['username'];
+        $username = $config->get('redis.username');
+        if ($username !== null && $username !== '') {
+            $parameters['username'] = $username;
         }
 
-        if ($config['password'] !== null && $config['password'] !== '') {
-            $parameters['password'] = $config['password'];
+        $password = $config->get('redis.password');
+        if ($password !== null && $password !== '') {
+            $parameters['password'] = $password;
         }
 
         return new Client($parameters, [
-            'prefix' => $config['prefix'],
+            'prefix' => $config->get('redis.prefix'),
         ]);
     },
     Form::class => function (Adapter $db) {

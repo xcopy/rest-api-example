@@ -46,10 +46,8 @@ class AuthController extends ValidatingController
             throw new HttpForbiddenException($request, 'Email address is not verified.');
         }
 
-        $config = require APP_BASE_PATH . '/config/auth.php';
-
         $token = TokenService::generateToken();
-        $expiresAt = DateTimeService::now()->modify($config['access_token_ttl']);
+        $expiresAt = DateTimeService::now()->modify($this->config->get('auth.access_token_ttl'));
 
         $insert = $this->sql
             ->insert('user_tokens')

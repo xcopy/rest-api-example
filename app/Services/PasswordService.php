@@ -15,15 +15,12 @@ class PasswordService
 {
     private Sql $sql;
 
-    /** @var array{dsn: string, from_address: string, from_name: string, app_url: string, verification_ttl: string, password_reset_ttl: string} */
-    private array $config;
-
     public function __construct(
         private Adapter $db,
-        private MailerInterface $mailer
+        private MailerInterface $mailer,
+        private ConfigService $config
     ) {
         $this->sql = new Sql($db);
-        $this->config = require APP_BASE_PATH . '/config/mail.php';
     }
 
     public static function generateHash(string $password): string
@@ -42,7 +39,7 @@ class PasswordService
             ->execute();
 
         $token = TokenService::generateToken();
-        $expiresAt = DateTimeService::now()->modify($this->config['password_reset_ttl']);
+        $expiresAt = DateTimeService::now()->modify($this->config->get('mail.password_reset_ttl'));
 
         $insert = $this->sql
             ->insert('password_reset_tokens')
@@ -56,10 +53,10 @@ class PasswordService
             ->prepareStatementForSqlObject($insert)
             ->execute();
 
-        $resetUrl = rtrim($this->config['app_url'], '/') . '/auth/reset-password';
+        $resetUrl = rtrim($this->config->get('mail.app_url'), '/') . '/auth/reset-password';
 
         $message = (new Email())
-            ->from(new Address($this->config['from_address'], $this->config['from_name']))
+            ->from(new Address($this->config->get('mail.from_address'), $this->config->get('mail.from_name')))
             ->to($email)
             ->subject('Reset your password')
             ->text(sprintf(

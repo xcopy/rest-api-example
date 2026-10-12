@@ -15,13 +15,7 @@ use Slim\Exception\HttpNotFoundException;
 
 class EmailVerificationController extends ValidatingController
 {
-    /** @var array<string, string> */
-    private array $config;
-
-    public function __construct(private EmailVerificationService $emailVerification)
-    {
-        $this->config = require APP_BASE_PATH . '/config/app.php';
-    }
+    public function __construct(private EmailVerificationService $emailVerification) {}
 
     protected function getValidator(): BaseValidator
     {
@@ -56,7 +50,7 @@ class EmailVerificationController extends ValidatingController
 
         $this->emailVerification->send((int) $user['id'], $user['email'], $token);
 
-        $data = $this->config['env'] === 'local' ? compact('token') : null;
+        $data = $this->config->get('app.env') === 'local' ? compact('token') : null;
 
         return JsonResponse::write($response, $data, 202);
     }
