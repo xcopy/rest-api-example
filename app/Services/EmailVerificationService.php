@@ -36,7 +36,7 @@ class EmailVerificationService
             ->execute();
 
         $token = TokenService::generateToken();
-        $expiresAt = DateTimeService::now()->modify($this->config->get('mail.verification_ttl'));
+        $expiresAt = DateTimeService::now()->modify($this->config->get('email-verification.ttl'));
 
         $insert = $this->sql
             ->insert('email_verification_tokens')
@@ -50,7 +50,7 @@ class EmailVerificationService
             ->prepareStatementForSqlObject($insert)
             ->execute();
 
-        $verificationUrl = rtrim($this->config->get('mail.app_url'), '/') . '/auth/verify-email';
+        $verificationUrl = rtrim($this->config->get('app.base_url'), '/') . '/auth/verify-email';
 
         $message = (new Email())
             ->from(new Address($this->config->get('mail.from_address'), $this->config->get('mail.from_name')))

@@ -42,7 +42,7 @@ class PasswordService
             ->execute();
 
         $token = TokenService::generateToken();
-        $expiresAt = DateTimeService::now()->modify($this->config->get('mail.password_reset_ttl'));
+        $expiresAt = DateTimeService::now()->modify($this->config->get('password.reset_ttl'));
 
         $insert = $this->sql
             ->insert('password_reset_tokens')
@@ -56,7 +56,7 @@ class PasswordService
             ->prepareStatementForSqlObject($insert)
             ->execute();
 
-        $resetUrl = rtrim($this->config->get('mail.app_url'), '/') . '/auth/reset-password';
+        $resetUrl = rtrim($this->config->get('app.base_url'), '/') . '/auth/reset-password';
 
         $message = (new Email())
             ->from(new Address($this->config->get('mail.from_address'), $this->config->get('mail.from_name')))
