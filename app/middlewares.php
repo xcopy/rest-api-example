@@ -7,6 +7,7 @@ use App\Handlers\ErrorHandler;
 use App\Middlewares\CorsMiddleware;
 use App\Middlewares\RateLimitMiddleware;
 use App\Middlewares\TrimInputMiddleware;
+use App\Services\DateTimeService;
 use Middlewares\TrailingSlash;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
@@ -34,7 +35,7 @@ return function (App $app) {
     );
     $stream->setFormatter(new LineFormatter(
         "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n",
-        'Y-m-d H:i:s',
+        DateTimeService::FORMAT,
         allowInlineLineBreaks: true,
         ignoreEmptyContextAndExtra: true
     ));

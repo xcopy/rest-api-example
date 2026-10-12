@@ -6,10 +6,12 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
+use App\Services\DateTimeService;
 use App\Services\EmailVerificationService;
 use App\Services\PasswordService;
 use App\Services\TokenService;
 use App\Validators\AuthValidator;
+use DateInterval;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use Leaf\Form;
@@ -71,15 +73,14 @@ class AuthController
         $config = require APP_BASE_PATH . '/config/auth.php';
 
         $token = TokenService::generateToken();
-        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $expiresAt = $now->modify($config['access_token_ttl']);
+        $expiresAt = DateTimeService::now()->modify($config['access_token_ttl']);
 
         $insert = $this->sql
             ->insert('user_tokens')
             ->values([
                 'user_id' => $user['id'],
                 'token_hash' => TokenService::hash($token),
-                'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+                'expires_at' => $expiresAt->format(DateTimeService::FORMAT),
             ]);
 
         $this->sql
@@ -262,15 +263,14 @@ class AuthController
             ]);
         }
 
-        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $cooldownCutoff = $now->sub(new \DateInterval('PT24H'));
+        $cooldownCutoff = DateTimeService::now()->sub(new DateInterval('PT24H'));
         $cooldownException = new HttpUnprocessableEntityException($request, [
             'new_password' => 'Password can only be changed once every 24 hours.',
         ]);
 
         if (
             $user['password_changed_at'] !== null
-            && new \DateTimeImmutable($user['password_changed_at'], new \DateTimeZone('UTC')) > $cooldownCutoff
+            && DateTimeService::make($user['password_changed_at']) > $cooldownCutoff
         ) {
             throw $cooldownException;
         }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Middlewares;
 
+use App\Services\DateTimeService;
 use App\Services\TokenService;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
@@ -38,7 +39,7 @@ class AuthenticationMiddleware implements MiddlewareInterface
             ->join('users', 'user_tokens.user_id = users.id', ['id'])
             ->where([
                 'user_tokens.token_hash' => $token_hash,
-                'user_tokens.expires_at > ?' => gmdate('Y-m-d H:i:s'),
+                'user_tokens.expires_at > ?' => DateTimeService::now(true),
             ])
             ->limit(1);
 

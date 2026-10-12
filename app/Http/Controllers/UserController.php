@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Policies\UserPolicy;
+use App\Services\DateTimeService;
 use App\Services\EmailVerificationService;
 use App\Services\PasswordService;
 use App\Validators\UserValidator;
@@ -17,6 +18,7 @@ use Laminas\Db\Sql\Sql;
 use Leaf\Form;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use RuntimeException;
 use Slim\Exception\HttpNotFoundException;
 
 class UserController
@@ -132,7 +134,7 @@ class UserController
             ->current();
 
         if ($user === false) {
-            throw new \RuntimeException('The newly created user could not be loaded.');
+            throw new RuntimeException('The newly created user could not be loaded.');
         }
 
         $this->emailVerification->sendVerification($user_id, $user['email']);
@@ -165,7 +167,7 @@ class UserController
             $data['email_verified_at'] = null;
         }
 
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = DateTimeService::now(true);
 
         $update = $this->sql
             ->update('users')
@@ -221,7 +223,7 @@ class UserController
                 $data['email_verified_at'] = null;
             }
 
-            $data['updated_at'] = date('Y-m-d H:i:s');
+            $data['updated_at'] = DateTimeService::now(true);
         } else {
             $data['id'] = $id;
         }
@@ -290,7 +292,7 @@ class UserController
             ->current();
 
         if ($role === false) {
-            throw new \RuntimeException('The default user role is not configured.');
+            throw new RuntimeException('The default user role is not configured.');
         }
 
         $insert = $this->sql

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use DateTimeImmutable;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use Symfony\Component\Mailer\MailerInterface;
@@ -41,15 +42,14 @@ class PasswordService
             ->execute();
 
         $token = TokenService::generateToken();
-        $expiresAt = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
-            ->modify($this->config['password_reset_ttl']);
+        $expiresAt = DateTimeService::now()->modify($this->config['password_reset_ttl']);
 
         $insert = $this->sql
             ->insert('password_reset_tokens')
             ->values([
                 'user_id' => $user_id,
                 'token_hash' => TokenService::hash($token),
-                'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+                'expires_at' => $expiresAt->format(DateTimeService::FORMAT),
             ]);
 
         $this->sql
@@ -81,9 +81,10 @@ class PasswordService
             return false;
         }
 
+        $now = DateTimeService::now(true);
         $predicate = [
             'token_hash' => TokenService::hash($token),
-            'expires_at > ?' => gmdate('Y-m-d H:i:s'),
+            'expires_at > ?' => $now,
         ];
 
         $select = $this->sql
@@ -108,7 +109,10 @@ class PasswordService
         try {
             $consume = $this->sql
                 ->delete('password_reset_tokens')
-                ->where($predicate);
+                ->where([
+                    'token_hash' => TokenService::hash($token),
+                    'expires_at > ?' => $now,
+                ]);
 
             $consumed = $this->sql
                 ->prepareStatementForSqlObject($consume)
@@ -139,22 +143,21 @@ class PasswordService
     public function changePassword(
         int $user_id,
         string $password,
-        ?\DateTimeImmutable $changedBefore = null
+        ?DateTimeImmutable $changedBefore = null
     ): bool {
-        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $timestamp = $now->format('Y-m-d H:i:s');
+        $now = DateTimeService::now(true);
         $update = $this->sql
             ->update('users')
             ->set([
                 'password' => self::generateHash($password),
-                'password_changed_at' => $timestamp,
-                'updated_at' => $timestamp,
+                'password_changed_at' => $now,
+                'updated_at' => $now,
             ])
             ->where(['id' => $user_id]);
 
         if ($changedBefore !== null) {
             $update->where([
-                '(password_changed_at IS NULL OR password_changed_at <= ?)' => $changedBefore->format('Y-m-d H:i:s'),
+                '(password_changed_at IS NULL OR password_changed_at <= ?)' => $changedBefore->format(DateTimeService::FORMAT),
             ]);
         }
 

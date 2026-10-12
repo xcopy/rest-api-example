@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Middlewares;
 
 use App\Handlers\ErrorHandler;
+use App\Services\DateTimeService;
 use App\Services\TokenService;
 use Predis\ClientInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use RuntimeException;
 use Slim\Exception\HttpTooManyRequestsException;
 
 class RateLimitMiddleware implements MiddlewareInterface
@@ -23,12 +25,12 @@ class RateLimitMiddleware implements MiddlewareInterface
         $packedAddress = is_string($remoteAddress) ? inet_pton($remoteAddress) : false;
 
         if ($packedAddress === false) {
-            throw new \RuntimeException('A valid client IP address is required for rate limiting.');
+            throw new RuntimeException('A valid client IP address is required for rate limiting.');
         }
 
         $config = require APP_BASE_PATH . '/config/rate-limit.php';
 
-        $now = time();
+        $now = DateTimeService::now()->getTimestamp();
         $windowStart = intdiv($now, $config['window']) * $config['window'];
         $resetAfter = ($windowStart + $config['window']) - $now;
         $key = sprintf('rate-limit:%s:%d', TokenService::hash($packedAddress), $windowStart);
@@ -57,7 +59,7 @@ LUA,
         );
 
         if (!is_int($requestCount)) {
-            throw new \RuntimeException('Unable to update the API rate limit counter in Redis.');
+            throw new RuntimeException('Unable to update the API rate limit counter in Redis.');
         }
 
         $blocked = $requestCount === -1;

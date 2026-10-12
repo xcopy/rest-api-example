@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 error_reporting(E_ALL & ~E_DEPRECATED);
 
+use App\Services\DateTimeService;
 use App\Services\PasswordService;
 use Faker\Factory;
 use Phinx\Seed\AbstractSeed;
@@ -20,7 +21,7 @@ class UserSeeder extends AbstractSeed
                 'first_name' => 'Kairat',
                 'last_name' => 'Jenihev',
                 'password' => $password,
-                'email_verified_at' => gmdate('Y-m-d H:i:s'),
+                'email_verified_at' => DateTimeService::now(true),
             ],
         ];
 

@@ -38,15 +38,14 @@ class EmailVerificationService
             ->execute();
 
         $token = TokenService::generateToken();
-        $expiresAt = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
-            ->modify($this->config['verification_ttl']);
+        $expiresAt = DateTimeService::now()->modify($this->config['verification_ttl']);
 
         $insert = $this->sql
             ->insert('email_verification_tokens')
             ->values([
                 'user_id' => $user_id,
                 'token_hash' => TokenService::hash($token),
-                'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+                'expires_at' => $expiresAt->format(DateTimeService::FORMAT),
             ]);
 
         $this->sql
@@ -77,13 +76,16 @@ class EmailVerificationService
             return false;
         }
 
+        $now = DateTimeService::now(true);
+        $predicate = [
+            'token_hash' => TokenService::hash($token),
+            'expires_at > ?' => $now,
+        ];
+
         $select = $this->sql
             ->select('email_verification_tokens')
             ->columns(['user_id'])
-            ->where([
-                'token_hash' => TokenService::hash($token),
-                'expires_at > ?' => gmdate('Y-m-d H:i:s'),
-            ])
+            ->where($predicate)
             ->limit(1);
 
         $verificationToken = $this->sql
@@ -95,12 +97,13 @@ class EmailVerificationService
             return false;
         }
 
+        $consumePredicate = [
+            'token_hash' => TokenService::hash($token),
+            'expires_at > ?' => $now,
+        ];
         $consume = $this->sql
             ->delete('email_verification_tokens')
-            ->where([
-                'token_hash' => TokenService::hash($token),
-                'expires_at > ?' => gmdate('Y-m-d H:i:s'),
-            ]);
+            ->where($consumePredicate);
 
         $consumed = $this->sql
             ->prepareStatementForSqlObject($consume)
@@ -114,7 +117,7 @@ class EmailVerificationService
 
         $update = $this->sql
             ->update('users')
-            ->set(['email_verified_at' => gmdate('Y-m-d H:i:s')])
+            ->set(['email_verified_at' => $now])
             ->where(['id' => $user_id]);
 
         $this->sql
