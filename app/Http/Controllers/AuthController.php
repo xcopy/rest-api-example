@@ -8,6 +8,7 @@ use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Services\EmailVerificationService;
 use App\Services\PasswordService;
+use App\Services\TokenService;
 use App\Validators\AuthValidator;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
@@ -69,7 +70,7 @@ class AuthController
 
         $config = require APP_BASE_PATH . '/config/auth.php';
 
-        $token = bin2hex(random_bytes(32));
+        $token = TokenService::generateToken();
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $expiresAt = $now->modify($config['access_token_ttl']);
 
@@ -77,7 +78,7 @@ class AuthController
             ->insert('user_tokens')
             ->values([
                 'user_id' => $user['id'],
-                'token_hash' => hash('sha256', $token),
+                'token_hash' => TokenService::hash($token),
                 'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
             ]);
 

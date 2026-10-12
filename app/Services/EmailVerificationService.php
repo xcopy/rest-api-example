@@ -37,7 +37,7 @@ class EmailVerificationService
             )
             ->execute();
 
-        $token = bin2hex(random_bytes(32));
+        $token = TokenService::generateToken();
         $expiresAt = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
             ->modify($this->config['verification_ttl']);
 
@@ -45,7 +45,7 @@ class EmailVerificationService
             ->insert('email_verification_tokens')
             ->values([
                 'user_id' => $user_id,
-                'token_hash' => hash('sha256', $token),
+                'token_hash' => TokenService::hash($token),
                 'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
             ]);
 
@@ -81,7 +81,7 @@ class EmailVerificationService
             ->select('email_verification_tokens')
             ->columns(['user_id'])
             ->where([
-                'token_hash' => hash('sha256', $token),
+                'token_hash' => TokenService::hash($token),
                 'expires_at > ?' => gmdate('Y-m-d H:i:s'),
             ])
             ->limit(1);
@@ -98,7 +98,7 @@ class EmailVerificationService
         $consume = $this->sql
             ->delete('email_verification_tokens')
             ->where([
-                'token_hash' => hash('sha256', $token),
+                'token_hash' => TokenService::hash($token),
                 'expires_at > ?' => gmdate('Y-m-d H:i:s'),
             ]);
 

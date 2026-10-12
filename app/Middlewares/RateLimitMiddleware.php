@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Middlewares;
 
 use App\Handlers\ErrorHandler;
+use App\Services\TokenService;
 use Predis\ClientInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -30,8 +31,7 @@ class RateLimitMiddleware implements MiddlewareInterface
         $now = time();
         $windowStart = intdiv($now, $config['window']) * $config['window'];
         $resetAfter = ($windowStart + $config['window']) - $now;
-        $ipHash = hash('sha256', $packedAddress);
-        $key = sprintf('rate-limit:%s:%d', $ipHash, $windowStart);
+        $key = sprintf('rate-limit:%s:%d', TokenService::hash($packedAddress), $windowStart);
 
         $requestCount = $this->redis->eval(
             <<<'LUA'

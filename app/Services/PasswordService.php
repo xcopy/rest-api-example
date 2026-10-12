@@ -25,6 +25,11 @@ class PasswordService
         $this->config = require APP_BASE_PATH . '/config/mail.php';
     }
 
+    public static function generateHash(string $password): string
+    {
+        return password_hash($password, PASSWORD_DEFAULT);
+    }
+
     public function sendReset(int $user_id, string $email, ?string &$token = null): void
     {
         $delete = $this->sql
@@ -35,7 +40,7 @@ class PasswordService
             ->prepareStatementForSqlObject($delete)
             ->execute();
 
-        $token = bin2hex(random_bytes(32));
+        $token = TokenService::generateToken();
         $expiresAt = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
             ->modify($this->config['password_reset_ttl']);
 
@@ -43,7 +48,7 @@ class PasswordService
             ->insert('password_reset_tokens')
             ->values([
                 'user_id' => $user_id,
-                'token_hash' => hash('sha256', $token),
+                'token_hash' => TokenService::hash($token),
                 'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
             ]);
 
@@ -77,7 +82,7 @@ class PasswordService
         }
 
         $predicate = [
-            'token_hash' => hash('sha256', $token),
+            'token_hash' => TokenService::hash($token),
             'expires_at > ?' => gmdate('Y-m-d H:i:s'),
         ];
 
@@ -141,7 +146,7 @@ class PasswordService
         $update = $this->sql
             ->update('users')
             ->set([
-                'password' => password_hash($password, PASSWORD_DEFAULT),
+                'password' => self::generateHash($password),
                 'password_changed_at' => $timestamp,
                 'updated_at' => $timestamp,
             ])

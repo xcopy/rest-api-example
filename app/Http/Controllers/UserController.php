@@ -8,6 +8,7 @@ use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Policies\UserPolicy;
 use App\Services\EmailVerificationService;
+use App\Services\PasswordService;
 use App\Validators\UserValidator;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Expression;
@@ -106,7 +107,7 @@ class UserController
             throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
         }
 
-        $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        $data['password'] = PasswordService::generateHash($data['password']);
 
         unset($data['password_repeat']);
 
@@ -225,7 +226,7 @@ class UserController
             $data['id'] = $id;
         }
 
-        $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        $data['password'] = PasswordService::generateHash($data['password']);
 
         unset($data['password_repeat']);
 

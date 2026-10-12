@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Middlewares;
 
+use App\Services\TokenService;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use Psr\Http\Message\ResponseInterface;
@@ -29,7 +30,7 @@ class AuthenticationMiddleware implements MiddlewareInterface
             throw new HttpUnauthorizedException($request);
         }
 
-        $token_hash = hash('sha256', $matches[1]);
+        $token_hash = TokenService::hash($matches[1]);
 
         $select = $this->sql
             ->select('user_tokens')
