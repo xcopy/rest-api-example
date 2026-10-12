@@ -17,12 +17,26 @@ return (new Config())
     ->setRules([
         '@PER-CS' => true,
         'declare_strict_types' => true,
-        'ordered_imports' => ['sort_algorithm' => 'alpha'],
+        'ordered_imports' => [
+            'sort_algorithm' => 'alpha',
+        ],
         'no_unused_imports' => true,
         'no_extra_blank_lines' => [
-            'tokens' => ['extra', 'throw', 'use', 'use_trait']
+            'tokens' => [
+                'extra',
+                'throw',
+                'use',
+                'use_trait',
+                'break',
+                'case',
+                'default',
+                'curly_brace_block',
+                'square_brace_block',
+            ]
         ],
-        'trailing_comma_in_multiline' => ['elements' => ['arrays']],
+        'trailing_comma_in_multiline' => [
+            'elements' => ['arrays'],
+        ],
     ])
     ->setFinder($finder)
     ->setRiskyAllowed(true)
