@@ -23,7 +23,7 @@ class EmailVerificationService
         $this->config = require APP_BASE_PATH . '/config/mail.php';
     }
 
-    public function sendVerification(int $user_id, string $email, ?string &$token = null): void
+    public function send(int $user_id, string $email, ?string &$token = null): void
     {
         $this->sql
             ->prepareStatementForSqlObject(

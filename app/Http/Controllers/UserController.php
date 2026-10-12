@@ -14,17 +14,14 @@ use App\Validators\UserValidator;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Select;
-use Laminas\Db\Sql\Sql;
 use Leaf\Form;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use RuntimeException;
 use Slim\Exception\HttpNotFoundException;
 
-class UserController
+class UserController extends Controller
 {
-    private Sql $sql;
-
     private Select $baseSelect;
 
     private UserValidator $validator;
@@ -33,7 +30,8 @@ class UserController
 
     public function __construct(Adapter $db, Form $form, private EmailVerificationService $emailVerification)
     {
-        $this->sql = new Sql($db);
+        parent::__construct($db);
+
         $this->policy = new UserPolicy($db);
 
         $this->baseSelect = $this->sql
@@ -137,7 +135,7 @@ class UserController
             throw new RuntimeException('The newly created user could not be loaded.');
         }
 
-        $this->emailVerification->sendVerification($user_id, $user['email']);
+        $this->emailVerification->send($user_id, $user['email']);
 
         return JsonResponse::write($response, $user, 201);
     }
@@ -179,7 +177,7 @@ class UserController
             ->execute();
 
         if ($emailChanged) {
-            $this->emailVerification->sendVerification((int) $id, $data['email']);
+            $this->emailVerification->send((int) $id, $data['email']);
         }
 
         return JsonResponse::write($response, status: 204);
@@ -245,10 +243,10 @@ class UserController
         }
 
         if ($emailChanged) {
-            $this->emailVerification->sendVerification((int) $id, $data['email']);
+            $this->emailVerification->send((int) $id, $data['email']);
         } elseif (!$exists) {
             $user = $this->findUser($request, $id);
-            $this->emailVerification->sendVerification((int) $id, $user['email']);
+            $this->emailVerification->send((int) $id, $user['email']);
         }
 
         return JsonResponse::write(

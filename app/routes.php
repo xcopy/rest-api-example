@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\EmailVerificationController;
+use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\UserController;
 use App\Middlewares\AuthenticationMiddleware;
 use App\Middlewares\LowerFilterMiddleware;
@@ -11,61 +13,82 @@ use Laminas\Db\Adapter\Adapter;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
-$lowerFilter = new LowerFilterMiddleware('email');
+$authMiddleware = AuthenticationMiddleware::class;
+$lowerFilterMiddleware = new LowerFilterMiddleware('email');
 
-return function (App $app) use ($lowerFilter) {
+return function (App $app) use ($authMiddleware, $lowerFilterMiddleware) {
     // auth
-    $app->group('/auth', function (RouteCollectorProxy $group) use ($lowerFilter) {
-        $auth = AuthenticationMiddleware::class;
+    $app->group('/auth', function (RouteCollectorProxy $group) use ($authMiddleware, $lowerFilterMiddleware) {
         $controllerClass = AuthController::class;
 
         $group
             ->post('/login', [$controllerClass, 'login'])
-            ->add($lowerFilter);
+            ->add($lowerFilterMiddleware);
         $group
             ->post('/logout', [$controllerClass, 'logout'])
-            ->add($auth);
+            ->add($authMiddleware);
         $group
             ->post('/logout-all', [$controllerClass, 'logoutAll'])
-            ->add($auth);
-
-        $group->post('/verify-email', [$controllerClass, 'verifyEmail']);
-        $group
-            ->post('/send-verification', [$controllerClass, 'sendVerification'])
-            ->add($lowerFilter);
+            ->add($authMiddleware);
 
         $group
             ->post('/change-password', [$controllerClass, 'changePassword'])
-            ->add($auth);
+            ->add($authMiddleware);
         $group
             ->post('/forgot-password', [$controllerClass, 'forgotPassword'])
-            ->add($lowerFilter);
+            ->add($lowerFilterMiddleware);
         $group->post('/reset-password', [$controllerClass, 'resetPassword']);
+    });
+
+    // email-verification
+    $app->group('/email-verification', function (RouteCollectorProxy $group) use ($lowerFilterMiddleware) {
+        $controllerClass = EmailVerificationController::class;
+
+        $group
+            ->post('/send', [$controllerClass, 'send'])
+            ->add($lowerFilterMiddleware);
+        $group->post('/verify', [$controllerClass, 'verify']);
+    });
+
+    // password
+    $app->group('/password', function (RouteCollectorProxy $group) use ($authMiddleware, $lowerFilterMiddleware) {
+        $controllerClass = PasswordController::class;
+
+        $group
+            ->post('/change', [$controllerClass, 'change'])
+            ->add($authMiddleware);
+        $group
+            ->post('/forgot', [$controllerClass, 'forgot'])
+            ->add($lowerFilterMiddleware);
+        $group->post('/reset', [$controllerClass, 'reset']);
     });
 
     // users
     $app
-        ->group('/users', function (RouteCollectorProxy $group) use ($lowerFilter) {
+        ->group('/users', function (RouteCollectorProxy $group) use ($lowerFilterMiddleware) {
             $controllerClass = UserController::class;
             $id = '/{id:[0-9]+}';
 
-            $authorize = fn(string $permission) => new RbacMiddleware(
+            $authMiddleware = fn(string $permission) => new RbacMiddleware(
                 $group->getContainer()->get(Adapter::class),
                 $permission
             );
 
-            $group->get('', [$controllerClass, 'index'])->add($authorize('list users'));
-            $group->get($id, [$controllerClass, 'show'])->add($authorize('show user'));
+            $group->get('', [$controllerClass, 'index'])
+                ->add($authMiddleware('list users'));
+            $group->get($id, [$controllerClass, 'show'])
+                ->add($authMiddleware('show user'));
             $group->post('', [$controllerClass, 'create'])
-                ->add($lowerFilter)
-                ->add($authorize('create user'));
+                ->add($lowerFilterMiddleware)
+                ->add($authMiddleware('create user'));
             $group->map(['POST', 'PATCH'], $id, [$controllerClass, 'update'])
-                ->add($lowerFilter)
-                ->add($authorize('update user'));
+                ->add($lowerFilterMiddleware)
+                ->add($authMiddleware('update user'));
             $group->put($id, [$controllerClass, 'upsert'])
-                ->add($lowerFilter)
-                ->add($authorize('update user'));
-            $group->delete($id, [$controllerClass, 'delete'])->add($authorize('delete user'));
+                ->add($lowerFilterMiddleware)
+                ->add($authMiddleware('update user'));
+            $group->delete($id, [$controllerClass, 'delete'])
+                ->add($authMiddleware('delete user'));
         })
         ->add(AuthenticationMiddleware::class);
 };

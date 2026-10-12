@@ -75,7 +75,7 @@ class PasswordService
         $this->mailer->send($message);
     }
 
-    public function resetPassword(string $token, string $password): bool
+    public function reset(string $token, string $password): bool
     {
         if (!preg_match('/^[a-f0-9]{64}$/i', $token)) {
             return false;
@@ -124,7 +124,7 @@ class PasswordService
                 return false;
             }
 
-            if (!$this->changePassword($user_id, $password)) {
+            if (!$this->change($user_id, $password)) {
                 $connection->rollback();
 
                 return false;
@@ -140,7 +140,7 @@ class PasswordService
         }
     }
 
-    public function changePassword(
+    public function change(
         int $user_id,
         string $password,
         ?DateTimeImmutable $changedBefore = null

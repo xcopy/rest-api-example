@@ -11,24 +11,9 @@ class AuthValidator extends BaseValidator
      */
     protected function rules(string $scenario, array $context = []): array
     {
-        return match ($scenario) {
-            'verify-email' => ['token' => 'string'],
-            'send-verification' => ['email' => 'email'],
-            'forgot-password' => ['email' => 'email'],
-            'reset-password' => [
-                'token' => 'string',
-                'new_password' => 'string|min:8',
-                'new_password_repeat' => 'matchesvalueof<new_password>',
-            ],
-            'change-password' => [
-                'current_password' => 'string|min:1',
-                'new_password' => 'string|min:8',
-                'new_password_repeat' => 'matchesvalueof<new_password>',
-            ],
-            default => [
-                'email' => 'email',
-                'password' => 'string',
-            ]
-        };
+        return [
+            'email' => 'email',
+            'password' => 'string',
+        ];
     }
 }
