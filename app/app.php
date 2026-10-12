@@ -12,7 +12,7 @@ $middlewares = require __DIR__ . '/middlewares.php';
 $routes = require __DIR__ . '/routes.php';
 
 $containerBuilder = new ContainerBuilder();
-$containerBuilder->useAutowiring(true);
+$containerBuilder->useAttributes(true);
 $containerBuilder->addDefinitions($definitions);
 $container = $containerBuilder->build();
 

@@ -7,39 +7,31 @@ namespace App\Http\Controllers;
 use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Services\EmailVerificationService;
+use App\Validators\BaseValidator;
 use App\Validators\EmailVerificationValidator;
-use Laminas\Db\Adapter\Adapter;
-use Leaf\Form;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpNotFoundException;
 
-class EmailVerificationController extends Controller
+class EmailVerificationController extends ValidatingController
 {
-    private EmailVerificationValidator $validator;
-
     /** @var array<string, string> */
     private array $config;
 
-    public function __construct(
-        Adapter $db,
-        Form $form,
-        private EmailVerificationService $emailVerification
-    ) {
-        parent::__construct($db);
-
-        $this->validator = new EmailVerificationValidator($form);
+    public function __construct(private EmailVerificationService $emailVerification)
+    {
         $this->config = require APP_BASE_PATH . '/config/app.php';
+    }
+
+    protected function getValidator(): BaseValidator
+    {
+        return new EmailVerificationValidator($this->form);
     }
 
     public function send(Request $request, Response $response): Response
     {
         // body: email
-        $data = $this->validator->validate($request->getParsedBody() ?? [], 'send');
-
-        if ($data === false) {
-            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
-        }
+        $data = $this->validateRequest($request, 'send');
 
         $select = $this->sql
             ->select('users')
@@ -72,11 +64,7 @@ class EmailVerificationController extends Controller
     public function verify(Request $request, Response $response): Response
     {
         // body: token
-        $data = $this->validator->validate($request->getParsedBody() ?? [], 'verify');
-
-        if ($data === false) {
-            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
-        }
+        $data = $this->validateRequest($request, 'verify');
 
         if (!$this->emailVerification->verify($data['token'])) {
             throw new HttpUnprocessableEntityException($request, [

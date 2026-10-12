@@ -4,37 +4,27 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Services\DateTimeService;
 use App\Services\TokenService;
 use App\Validators\AuthValidator;
-use Laminas\Db\Adapter\Adapter;
-use Leaf\Form;
+use App\Validators\BaseValidator;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpForbiddenException;
 use Slim\Exception\HttpUnauthorizedException;
 
-class AuthController extends Controller
+class AuthController extends ValidatingController
 {
-    private AuthValidator $validator;
-
-    public function __construct(Adapter $db, Form $form)
+    protected function getValidator(): BaseValidator
     {
-        parent::__construct($db);
-
-        $this->validator = new AuthValidator($form);
+        return new AuthValidator($this->form);
     }
 
     public function login(Request $request, Response $response): Response
     {
         // body: email, password
-        $data = $this->validator->validate($request->getParsedBody() ?? []);
-
-        if ($data === false) {
-            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
-        }
+        $data = $this->validateRequest($request);
 
         $select = $this->sql
             ->select('users')

@@ -4,41 +4,32 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Policies\UserPolicy;
 use App\Services\DateTimeService;
 use App\Services\EmailVerificationService;
 use App\Services\PasswordService;
+use App\Validators\BaseValidator;
 use App\Validators\UserValidator;
-use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Select;
-use Leaf\Form;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use RuntimeException;
 use Slim\Exception\HttpNotFoundException;
 
-class UserController extends Controller
+class UserController extends ValidatingController
 {
-    private Select $baseSelect;
+    private ?Select $baseSelect = null;
 
-    private UserValidator $validator;
+    public function __construct(
+        private EmailVerificationService $emailVerification,
+        private UserPolicy $policy
+    ) {}
 
-    private UserPolicy $policy;
-
-    public function __construct(Adapter $db, Form $form, private EmailVerificationService $emailVerification)
+    protected function getValidator(): BaseValidator
     {
-        parent::__construct($db);
-
-        $this->policy = new UserPolicy($db);
-
-        $this->baseSelect = $this->sql
-            ->select('users')
-            ->columns(['id', 'email', 'first_name', 'last_name', 'email_verified_at']);
-
-        $this->validator = new UserValidator($form);
+        return new UserValidator($this->form);
     }
 
     public function index(Request $request, Response $response): Response
@@ -50,7 +41,7 @@ class UserController extends Controller
         $page = isset($queryParams['page']) ? max(1, (int) $queryParams['page']) : 1;
         $perPage = isset($queryParams['per_page']) ? max(1, min(20, (int) $queryParams['per_page'])) : 20;
 
-        $countSelect = (clone $this->baseSelect)
+        $countSelect = (clone $this->getBaseSelect())
             ->columns(['total' => new Expression('COUNT(*)')]); // overrides base columns
         $countResult = $this->sql
             ->prepareStatementForSqlObject($countSelect)
@@ -71,7 +62,7 @@ class UserController extends Controller
             ->withHeader('X-Pagination-Per-Page', (string) $perPage);
 
         // Клонируем базовое свойство класса
-        $select = (clone $this->baseSelect)
+        $select = (clone $this->getBaseSelect())
             ->limit($perPage)
             ->offset($offset)
             ->order('id DESC');
@@ -101,11 +92,7 @@ class UserController extends Controller
     {
         $this->policy->assertCanCreate($request);
 
-        $data = $this->validator->validate($request->getParsedBody() ?? []);
-
-        if ($data === false) {
-            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
-        }
+        $data = $this->validateRequest($request);
 
         $data['password'] = PasswordService::generateHash($data['password']);
 
@@ -123,7 +110,7 @@ class UserController extends Controller
 
         $this->assignDefaultRole($user_id);
 
-        $select = (clone $this->baseSelect)
+        $select = (clone $this->getBaseSelect())
             ->where(['id' => $user_id]);
 
         $user = $this->sql
@@ -149,15 +136,7 @@ class UserController extends Controller
 
         $this->policy->assertCanUpdate($request, (int) $id);
 
-        $data = $this->validator->validate(
-            $request->getParsedBody() ?? [],
-            'update',
-            ['user_id' => $id]
-        );
-
-        if ($data === false) {
-            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
-        }
+        $data = $this->validateRequest($request, 'update', ['user_id' => $id]);
 
         $emailChanged = isset($data['email']) && $data['email'] !== $user['email'];
 
@@ -203,14 +182,10 @@ class UserController extends Controller
             $this->policy->assertCanCreate($request);
         }
 
-        $data = $this->validator->validate(
-            $request->getParsedBody() ?? [],
+        $data = $this->validateRequest(
+            $request,
             context: $exists ? ['user_id' => $id] : []
         );
-
-        if ($data === false) {
-            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
-        }
 
         $emailChanged = $exists
             && isset($data['email'])
@@ -308,7 +283,7 @@ class UserController extends Controller
     /** @return array<string, mixed> */
     private function findUser(Request $request, int|string|null $id): array
     {
-        $select = (clone $this->baseSelect)
+        $select = (clone $this->getBaseSelect())
             ->where(compact('id'));
 
         $results = $this->sql
@@ -320,5 +295,12 @@ class UserController extends Controller
         }
 
         return $results->current();
+    }
+
+    private function getBaseSelect(): Select
+    {
+        return $this->baseSelect ??= $this->sql
+            ->select('users')
+            ->columns(['id', 'email', 'first_name', 'last_name', 'email_verified_at']);
     }
 }

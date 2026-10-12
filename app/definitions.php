@@ -35,6 +35,9 @@ return [
 
         return $adapter;
     },
+    Sql::class => function (Adapter $db) {
+        return new Sql($db);
+    },
     ClientInterface::class => function () {
         $config = require APP_BASE_PATH . '/config/redis.php';
 

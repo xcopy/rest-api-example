@@ -8,40 +8,32 @@ use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Services\DateTimeService;
 use App\Services\PasswordService;
+use App\Validators\BaseValidator;
 use App\Validators\PasswordValidator;
 use DateInterval;
-use Laminas\Db\Adapter\Adapter;
-use Leaf\Form;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpUnauthorizedException;
 
-class PasswordController extends Controller
+class PasswordController extends ValidatingController
 {
-    private PasswordValidator $validator;
-
     /** @var array<string, string> */
     private array $config;
 
-    public function __construct(
-        Adapter $db,
-        Form $form,
-        private PasswordService $passwordService
-    ) {
-        parent::__construct($db);
-
-        $this->validator = new PasswordValidator($form);
+    public function __construct(private PasswordService $passwordService)
+    {
         $this->config = require APP_BASE_PATH . '/config/app.php';
+    }
+
+    protected function getValidator(): BaseValidator
+    {
+        return new PasswordValidator($this->form);
     }
 
     public function change(Request $request, Response $response): Response
     {
         // body: current_password, new_password, new_password_repeat
-        $data = $this->validator->validate($request->getParsedBody() ?? [], 'change');
-
-        if ($data === false) {
-            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
-        }
+        $data = $this->validateRequest($request, 'change');
 
         $user_id = (int) $request->getAttribute('user_id');
 
@@ -104,11 +96,7 @@ class PasswordController extends Controller
     public function forgot(Request $request, Response $response): Response
     {
         // body: email
-        $data = $this->validator->validate($request->getParsedBody() ?? [], 'forgot');
-
-        if ($data === false) {
-            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
-        }
+        $data = $this->validateRequest($request, 'forgot');
 
         $select = $this->sql
             ->select('users')
@@ -135,11 +123,7 @@ class PasswordController extends Controller
     public function reset(Request $request, Response $response): Response
     {
         // body: token, new_password, new_password_repeat
-        $data = $this->validator->validate($request->getParsedBody() ?? [], 'reset');
-
-        if ($data === false) {
-            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
-        }
+        $data = $this->validateRequest($request, 'reset');
 
         if (!$this->passwordService->reset($data['token'], $data['new_password'])) {
             throw new HttpUnprocessableEntityException($request, [
