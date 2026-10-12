@@ -10,7 +10,7 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 
-class PasswordResetService
+class PasswordService
 {
     private Sql $sql;
 
@@ -27,10 +27,12 @@ class PasswordResetService
 
     public function sendReset(int $user_id, string $email, ?string &$token = null): void
     {
+        $delete = $this->sql
+            ->delete('password_reset_tokens')
+            ->where(compact('user_id'));
+
         $this->sql
-            ->prepareStatementForSqlObject(
-                $this->sql->delete('password_reset_tokens')->where(['user_id' => $user_id])
-            )
+            ->prepareStatementForSqlObject($delete)
             ->execute();
 
         $token = bin2hex(random_bytes(32));
@@ -74,15 +76,15 @@ class PasswordResetService
             return false;
         }
 
-        $tokenHash = hash('sha256', $token);
-        $now = gmdate('Y-m-d H:i:s');
+        $predicate = [
+            'token_hash' => hash('sha256', $token),
+            'expires_at > ?' => gmdate('Y-m-d H:i:s'),
+        ];
+
         $select = $this->sql
             ->select('password_reset_tokens')
             ->columns(['user_id'])
-            ->where([
-                'token_hash' => $tokenHash,
-                'expires_at > ?' => $now,
-            ])
+            ->where($predicate)
             ->limit(1);
 
         $resetToken = $this->sql
@@ -101,10 +103,7 @@ class PasswordResetService
         try {
             $consume = $this->sql
                 ->delete('password_reset_tokens')
-                ->where([
-                    'token_hash' => $tokenHash,
-                    'expires_at > ?' => gmdate('Y-m-d H:i:s'),
-                ]);
+                ->where($predicate);
 
             $consumed = $this->sql
                 ->prepareStatementForSqlObject($consume)
@@ -116,27 +115,11 @@ class PasswordResetService
                 return false;
             }
 
-            $now = gmdate('Y-m-d H:i:s');
-            $update = $this->sql
-                ->update('users')
-                ->set([
-                    'password' => password_hash($password, PASSWORD_DEFAULT),
-                    'password_changed_at' => $now,
-                    'updated_at' => $now,
-                ])
-                ->where(['id' => $user_id]);
+            if (!$this->changePassword($user_id, $password)) {
+                $connection->rollback();
 
-            $this->sql
-                ->prepareStatementForSqlObject($update)
-                ->execute();
-
-            $revokeTokens = $this->sql
-                ->delete('user_tokens')
-                ->where(['user_id' => $user_id]);
-
-            $this->sql
-                ->prepareStatementForSqlObject($revokeTokens)
-                ->execute();
+                return false;
+            }
 
             $connection->commit();
 
@@ -146,5 +129,46 @@ class PasswordResetService
 
             throw $exception;
         }
+    }
+
+    public function changePassword(
+        int $user_id,
+        string $password,
+        ?\DateTimeImmutable $changedBefore = null
+    ): bool {
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $timestamp = $now->format('Y-m-d H:i:s');
+        $update = $this->sql
+            ->update('users')
+            ->set([
+                'password' => password_hash($password, PASSWORD_DEFAULT),
+                'password_changed_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ])
+            ->where(['id' => $user_id]);
+
+        if ($changedBefore !== null) {
+            $update->where([
+                '(password_changed_at IS NULL OR password_changed_at <= ?)' => $changedBefore->format('Y-m-d H:i:s'),
+            ]);
+        }
+
+        $result = $this->sql
+            ->prepareStatementForSqlObject($update)
+            ->execute();
+
+        if ($result->getAffectedRows() !== 1) {
+            return false;
+        }
+
+        $revokeTokens = $this->sql
+            ->delete('user_tokens')
+            ->where(['user_id' => $user_id]);
+
+        $this->sql
+            ->prepareStatementForSqlObject($revokeTokens)
+            ->execute();
+
+        return true;
     }
 }

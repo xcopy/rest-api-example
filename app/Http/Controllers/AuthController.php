@@ -7,7 +7,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Services\EmailVerificationService;
-use App\Services\PasswordResetService;
+use App\Services\PasswordService;
 use App\Validators\AuthValidator;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
@@ -31,7 +31,7 @@ class AuthController
         Adapter $db,
         Form $form,
         private EmailVerificationService $emailVerification,
-        private PasswordResetService $passwordReset
+        private PasswordService $passwordService
     ) {
         $this->sql = new Sql($db);
         $this->validator = new AuthValidator($form);
@@ -40,15 +40,16 @@ class AuthController
 
     public function login(Request $request, Response $response): Response
     {
-        $credentials = $this->validator->validate($request->getParsedBody() ?? [], 'login');
+        // body: email, password
+        $data = $this->validator->validate($request->getParsedBody() ?? [], 'login');
 
-        if ($credentials === false) {
+        if ($data === false) {
             throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
         }
 
         $select = $this->sql
             ->select('users')
-            ->where(['email' => $credentials['email']])
+            ->where(['email' => $data['email']])
             ->limit(1);
 
         $user = $this->sql
@@ -56,7 +57,7 @@ class AuthController
             ->execute()
             ->current();
 
-        $successfull = $user && password_verify($credentials['password'], $user['password']);
+        $successfull = $user && password_verify($data['password'], $user['password']);
 
         if (!$successfull) {
             throw new HttpUnauthorizedException($request, 'Invalid email or password.');
@@ -90,25 +91,35 @@ class AuthController
         ]);
     }
 
-    public function verifyEmail(Request $request, Response $response): Response
+    public function logout(Request $request, Response $response): Response
     {
-        $data = $this->validator->validate($request->getParsedBody() ?? [], 'verify-email');
+        $sql = $this->sql
+            ->delete('user_tokens')
+            ->where(['token_hash' => $request->getAttribute('token_hash')]);
 
-        if ($data === false) {
-            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
-        }
+        $this->sql
+            ->prepareStatementForSqlObject($sql)
+            ->execute();
 
-        if (!$this->emailVerification->verify($data['token'])) {
-            throw new HttpUnprocessableEntityException($request, [
-                'token' => 'The verification token is invalid or expired.',
-            ]);
-        }
+        return JsonResponse::write($response, status: 204);
+    }
+
+    public function logoutAll(Request $request, Response $response): Response
+    {
+        $sql = $this->sql
+            ->delete('user_tokens')
+            ->where(['user_id' => $request->getAttribute('user_id')]);
+
+        $this->sql
+            ->prepareStatementForSqlObject($sql)
+            ->execute();
 
         return JsonResponse::write($response, status: 204);
     }
 
     public function sendVerification(Request $request, Response $response): Response
     {
+        // body: email
         $data = $this->validator->validate($request->getParsedBody() ?? [], 'send-verification');
 
         if ($data === false) {
@@ -143,8 +154,27 @@ class AuthController
         return JsonResponse::write($response, $data, 202);
     }
 
+    public function verifyEmail(Request $request, Response $response): Response
+    {
+        // body: token
+        $data = $this->validator->validate($request->getParsedBody() ?? [], 'verify-email');
+
+        if ($data === false) {
+            throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
+        }
+
+        if (!$this->emailVerification->verify($data['token'])) {
+            throw new HttpUnprocessableEntityException($request, [
+                'token' => 'The verification token is invalid or expired.',
+            ]);
+        }
+
+        return JsonResponse::write($response, status: 204);
+    }
+
     public function forgotPassword(Request $request, Response $response): Response
     {
+        // body: email
         $data = $this->validator->validate($request->getParsedBody() ?? [], 'forgot-password');
 
         if ($data === false) {
@@ -165,7 +195,7 @@ class AuthController
         $token = null;
 
         if ($user !== false) {
-            $this->passwordReset->sendReset((int) $user['id'], $user['email'], $token);
+            $this->passwordService->sendReset((int) $user['id'], $user['email'], $token);
         }
 
         $data = $this->config['env'] === 'local' ? compact('token') : null;
@@ -175,13 +205,14 @@ class AuthController
 
     public function resetPassword(Request $request, Response $response): Response
     {
+        // body: token, new_password, new_password_repeat
         $data = $this->validator->validate($request->getParsedBody() ?? [], 'reset-password');
 
         if ($data === false) {
             throw new HttpUnprocessableEntityException($request, $this->validator->getErrors());
         }
 
-        if (!$this->passwordReset->resetPassword($data['token'], $data['new_password'])) {
+        if (!$this->passwordService->resetPassword($data['token'], $data['new_password'])) {
             throw new HttpUnprocessableEntityException($request, [
                 'token' => 'The password reset token is invalid or expired.',
             ]);
@@ -190,34 +221,9 @@ class AuthController
         return JsonResponse::write($response, status: 204);
     }
 
-    public function logout(Request $request, Response $response): Response
-    {
-        $sql = $this->sql
-            ->delete('user_tokens')
-            ->where(['token_hash' => $request->getAttribute('token_hash')]);
-
-        $this->sql
-            ->prepareStatementForSqlObject($sql)
-            ->execute();
-
-        return JsonResponse::write($response, status: 204);
-    }
-
-    public function logoutAll(Request $request, Response $response): Response
-    {
-        $sql = $this->sql
-            ->delete('user_tokens')
-            ->where(['user_id' => $request->getAttribute('user_id')]);
-
-        $this->sql
-            ->prepareStatementForSqlObject($sql)
-            ->execute();
-
-        return JsonResponse::write($response, status: 204);
-    }
-
     public function changePassword(Request $request, Response $response): Response
     {
+        // body: current_password, new_password, new_password_repeat
         $data = $this->validator->validate($request->getParsedBody() ?? [], 'change-password');
 
         if ($data === false) {
@@ -268,31 +274,9 @@ class AuthController
             throw $cooldownException;
         }
 
-        $update = $this->sql
-            ->update('users')
-            ->set([
-                'password' => password_hash($new_password, PASSWORD_DEFAULT),
-                'password_changed_at' => $now->format('Y-m-d H:i:s'),
-                'updated_at' => $now->format('Y-m-d H:i:s'),
-            ])
-            ->where(['id' => $user_id])
-            ->where(['(password_changed_at IS NULL OR password_changed_at <= ?)' => $cooldownCutoff->format('Y-m-d H:i:s')]);
-
-        $result = $this->sql
-            ->prepareStatementForSqlObject($update)
-            ->execute();
-
-        if ($result->getAffectedRows() !== 1) {
+        if (!$this->passwordService->changePassword($user_id, $new_password, $cooldownCutoff)) {
             throw $cooldownException;
         }
-
-        $revokeTokens = $this->sql
-            ->delete('user_tokens')
-            ->where(compact('user_id'));
-
-        $this->sql
-            ->prepareStatementForSqlObject($revokeTokens)
-            ->execute();
 
         $isLocal = $this->config['env'] === 'local';
 
