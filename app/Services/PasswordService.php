@@ -8,9 +8,6 @@ use DateTimeImmutable;
 use DI\Attribute\Inject;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
-use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Component\Mime\Address;
-use Symfony\Component\Mime\Email;
 
 class PasswordService
 {
@@ -21,10 +18,10 @@ class PasswordService
     protected Sql $sql;
 
     #[Inject]
-    protected MailerInterface $mailer;
+    protected ConfigService $config;
 
     #[Inject]
-    protected ConfigService $config;
+    protected EmailService $emailService;
 
     public static function generateHash(string $password): string
     {
@@ -58,8 +55,8 @@ class PasswordService
 
         $resetUrl = rtrim($this->config->get('app.base_url'), '/') . '/auth/reset-password';
 
-        $message = (new Email())
-            ->from(new Address($this->config->get('mail.from_address'), $this->config->get('mail.from_name')))
+        $message = $this->emailService
+            ->compose()
             ->to($email)
             ->subject('Reset your password')
             ->text(sprintf(
@@ -72,7 +69,7 @@ class PasswordService
                 $expiresAt->format(DATE_ATOM)
             ));
 
-        $this->mailer->send($message);
+        $this->emailService->send($message);
     }
 
     public function reset(string $token, string $password): bool

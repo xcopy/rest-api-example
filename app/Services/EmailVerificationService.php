@@ -6,9 +6,6 @@ namespace App\Services;
 
 use DI\Attribute\Inject;
 use Laminas\Db\Sql\Sql;
-use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Component\Mime\Address;
-use Symfony\Component\Mime\Email;
 
 class EmailVerificationService
 {
@@ -16,10 +13,10 @@ class EmailVerificationService
     protected Sql $sql;
 
     #[Inject]
-    protected MailerInterface $mailer;
+    protected ConfigService $config;
 
     #[Inject]
-    protected ConfigService $config;
+    protected EmailService $emailService;
 
     public function send(int $user_id, string $email, ?string &$token = null): void
     {
@@ -52,8 +49,8 @@ class EmailVerificationService
 
         $verificationUrl = rtrim($this->config->get('app.base_url'), '/') . '/auth/verify-email';
 
-        $message = (new Email())
-            ->from(new Address($this->config->get('mail.from_address'), $this->config->get('mail.from_name')))
+        $message = $this->emailService
+            ->compose()
             ->to($email)
             ->subject('Verify your email address')
             ->text(sprintf(
@@ -65,7 +62,7 @@ class EmailVerificationService
                 $expiresAt->format(DATE_ATOM)
             ));
 
-        $this->mailer->send($message);
+        $this->emailService->send($message);
     }
 
     public function verify(string $token): bool
