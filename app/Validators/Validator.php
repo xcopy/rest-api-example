@@ -6,7 +6,7 @@ namespace App\Validators;
 
 use Leaf\Form;
 
-abstract class BaseValidator
+abstract class Validator
 {
     protected Form $form;
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Exceptions\HttpUnprocessableEntityException;
-use App\Validators\BaseValidator;
+use App\Validators\Validator;
 use DI\Attribute\Inject;
 use Leaf\Form;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -15,7 +15,7 @@ abstract class ValidatingController extends Controller
     #[Inject]
     protected Form $form;
 
-    abstract protected function getValidator(): BaseValidator;
+    abstract protected function getValidator(): Validator;
 
     /**
      * @param array<string, mixed> $context

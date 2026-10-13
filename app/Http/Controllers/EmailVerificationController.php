@@ -7,8 +7,8 @@ namespace App\Http\Controllers;
 use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Services\EmailVerificationService;
-use App\Validators\BaseValidator;
 use App\Validators\EmailVerificationValidator;
+use App\Validators\Validator;
 use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -19,7 +19,7 @@ class EmailVerificationController extends ValidatingController
     #[Inject]
     protected EmailVerificationService $emailVerification;
 
-    protected function getValidator(): BaseValidator
+    protected function getValidator(): Validator
     {
         return new EmailVerificationValidator($this->form);
     }

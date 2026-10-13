@@ -8,8 +8,8 @@ use App\Http\JsonResponse;
 use App\Policies\UserPolicy;
 use App\Services\EmailVerificationService;
 use App\Services\PasswordService;
-use App\Validators\BaseValidator;
 use App\Validators\UserValidator;
+use App\Validators\Validator;
 use DI\Attribute\Inject;
 use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Select;
@@ -28,7 +28,7 @@ class UserController extends ValidatingController
     #[Inject]
     protected UserPolicy $policy;
 
-    protected function getValidator(): BaseValidator
+    protected function getValidator(): Validator
     {
         return new UserValidator($this->form);
     }

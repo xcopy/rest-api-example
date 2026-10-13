@@ -7,8 +7,8 @@ namespace App\Http\Controllers;
 use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Services\PasswordService;
-use App\Validators\BaseValidator;
 use App\Validators\PasswordValidator;
+use App\Validators\Validator;
 use DateInterval;
 use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -20,7 +20,7 @@ class PasswordController extends ValidatingController
     #[Inject]
     protected PasswordService $passwordService;
 
-    protected function getValidator(): BaseValidator
+    protected function getValidator(): Validator
     {
         return new PasswordValidator($this->form);
     }
