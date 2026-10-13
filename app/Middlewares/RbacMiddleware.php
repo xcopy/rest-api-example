@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Middlewares;
 
-use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -17,9 +16,9 @@ class RbacMiddleware implements MiddlewareInterface
 {
     private Sql $sql;
 
-    public function __construct(Adapter $db, private string $permission)
+    public function __construct(Sql $sql, private string $permission)
     {
-        $this->sql = new Sql($db);
+        $this->sql = $sql;
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface

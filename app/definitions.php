@@ -78,12 +78,10 @@ return [
             'prefix' => $config->get('redis.prefix'),
         ]);
     },
-    Form::class => function (Adapter $db) {
+    Form::class => function (Sql $sql) {
         $form = new Form();
 
-        $form->rule('unique', function ($value, $param, $field) use ($db) {
-            $sql = new Sql($db);
-
+        $form->rule('unique', function ($value, $param, $field) use ($sql) {
             $params = explode(',', $param);
 
             $table = $params[0];
