@@ -33,9 +33,17 @@
         "symfony/var-dumper": "^7.4",
         "friendsofphp/php-cs-fixer": "^3.95",
         "phpstan/phpstan": "^2.3",
-        "psy/psysh": "^0.12.24"
+        "psy/psysh": "^0.12.24",
+        "pestphp/pest": "^1.23"
     },
     "scripts": {
+        "test:db": [
+            "@putenv APP_ENV=testing",
+            "vendor/bin/phinx rollback -t 0 -c .phinx.php",
+            "vendor/bin/phinx migrate -c .phinx.php",
+            "vendor/bin/phinx seed:run -c .phinx.php -s RoleSeeder -s PermissionSeeder -s PermissionRoleSeeder"
+        ],
+        "test": "vendor/bin/pest",
         "db:fresh": [
             "vendor/bin/phinx rollback -t 0 -c .phinx.php",
             "vendor/bin/phinx migrate -c .phinx.php"
@@ -49,5 +57,10 @@
         "analyse": [
             "vendor/bin/phpstan analyse --error-format=table --no-progress > .phpstan-report.txt || true"
         ]
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     }
 }

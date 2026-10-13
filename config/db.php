@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+$sqlite = fn(string $env) => [
+    'driver' => 'Pdo_Sqlite',
+    'database' => dirname(__DIR__) . "/db/db-{$env}.sqlite3",
+];
+
 return [
-    'local' => [
-        'driver' => 'Pdo_Sqlite',
-        'database' => dirname(__DIR__) . '/db/db.sqlite3',
-    ],
+    'local' => $sqlite('local'),
+    'testing' => $sqlite('testing'),
     'production' => [
         'driver' => 'Pdo_Mysql',
         'database' => getenv('MYSQL_DATABASE') ?: 'rest_api_example',

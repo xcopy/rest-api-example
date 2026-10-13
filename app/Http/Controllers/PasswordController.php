@@ -81,9 +81,7 @@ class PasswordController extends ValidatingController
 
         $isLocal = $this->config->get('app.env') === 'local';
 
-        $data = $isLocal
-            ? ['password' => $new_password]
-            : null;
+        $data = $isLocal ? ['password' => $new_password] : null;
 
         $status = $isLocal ? 200 : 204;
 

@@ -3,14 +3,16 @@
 declare(strict_types=1);
 
 $db = require __DIR__ . '/db.php';
-$local = $db['local'];
 $production = $db['production'];
 
+$sqlite = fn(string $env) => [
+    'adapter' => 'sqlite',
+    'name' => str_replace('.sqlite3', '', $db[$env]['database']),
+];
+
 return [
-    'local' => [
-        'adapter' => 'sqlite',
-        'name' => str_replace('.sqlite3', '', $local['database']),
-    ],
+    'local' => $sqlite('local'),
+    'testing' => $sqlite('testing'),
     'production' => [
         'adapter' => 'mysql',
         'name' => $production['database'],

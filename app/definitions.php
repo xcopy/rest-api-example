@@ -34,17 +34,18 @@ return [
         return new ConfigService($values);
     },
     MailerInterface::class => function (ConfigService $config) {
-        $transport = $config->get('app.env') === 'local'
+        $env = $config->get('app.env');
+        $transport = in_array($env, ['local', 'testing'])
             ? new FileTransport(APP_BASE_PATH . '/logs/mail')
             : Transport::fromDsn($config->get('mail.dsn'));
 
         return new Mailer($transport);
     },
     Adapter::class => function (ConfigService $config) {
-        $environment = $config->get('app.env');
-        $adapter = new Adapter($config->get('db.' . $environment));
+        $env = $config->get('app.env');
+        $adapter = new Adapter($config->get('db.' . $env));
 
-        if ($environment === 'local') {
+        if (in_array($env, ['local', 'testing'])) {
             $adapter->query('PRAGMA foreign_keys = ON;')->execute();
         }
 

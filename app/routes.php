@@ -6,10 +6,13 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\UserController;
+use App\Http\JsonResponse;
 use App\Middlewares\AuthenticationMiddleware;
 use App\Middlewares\LowerFilterMiddleware;
 use App\Middlewares\RbacMiddleware;
 use Laminas\Db\Adapter\Adapter;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -17,6 +20,11 @@ $authMiddleware = AuthenticationMiddleware::class;
 $lowerFilterMiddleware = new LowerFilterMiddleware('email');
 
 return function (App $app) use ($authMiddleware, $lowerFilterMiddleware) {
+    // health
+    $app->get('/health', function (Request $request, Response $response) {
+        return JsonResponse::write($response, ['status' => 'ok']);
+    });
+
     // auth
     $app->group('/auth', function (RouteCollectorProxy $group) use ($authMiddleware, $lowerFilterMiddleware) {
         $controllerClass = AuthController::class;
