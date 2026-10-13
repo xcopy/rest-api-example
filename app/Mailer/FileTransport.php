@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Mailer;
 
-use App\Services\DateTimeService;
-use App\Services\TokenService;
 use RuntimeException;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mailer\Transport\AbstractTransport;
@@ -25,8 +23,8 @@ final class FileTransport extends AbstractTransport
 
         $filename = sprintf(
             '%s-%s.eml',
-            DateTimeService::now()->format('YmdHis'),
-            TokenService::generateToken(8)
+            now()->format('YmdHis'),
+            generateToken(8)
         );
 
         $path = $this->directory . '/' . $filename;

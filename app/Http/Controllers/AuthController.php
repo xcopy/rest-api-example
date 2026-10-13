@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\JsonResponse;
-use App\Services\DateTimeService;
-use App\Services\TokenService;
 use App\Validators\AuthValidator;
 use App\Validators\BaseValidator;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -46,15 +44,15 @@ class AuthController extends ValidatingController
             throw new HttpForbiddenException($request, 'Email address is not verified.');
         }
 
-        $token = TokenService::generateToken();
-        $expiresAt = DateTimeService::now()->modify($this->config->get('auth.access_token_ttl'));
+        $token = generateToken();
+        $expiresAt = now()->modify($this->config->get('auth.access_token_ttl'));
 
         $insert = $this->sql
             ->insert('user_tokens')
             ->values([
                 'user_id' => $user['id'],
-                'token_hash' => TokenService::hash($token),
-                'expires_at' => $expiresAt->format(DateTimeService::FORMAT),
+                'token_hash' => hashToken($token),
+                'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
             ]);
 
         $this->sql

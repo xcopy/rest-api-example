@@ -6,7 +6,6 @@ namespace App\Http\Controllers;
 
 use App\Http\JsonResponse;
 use App\Policies\UserPolicy;
-use App\Services\DateTimeService;
 use App\Services\EmailVerificationService;
 use App\Services\PasswordService;
 use App\Validators\BaseValidator;
@@ -146,7 +145,7 @@ class UserController extends ValidatingController
             $data['email_verified_at'] = null;
         }
 
-        $data['updated_at'] = DateTimeService::now(true);
+        $data['updated_at'] = now(true);
 
         $update = $this->sql
             ->update('users')
@@ -198,7 +197,7 @@ class UserController extends ValidatingController
                 $data['email_verified_at'] = null;
             }
 
-            $data['updated_at'] = DateTimeService::now(true);
+            $data['updated_at'] = now(true);
         } else {
             $data['id'] = $id;
         }
@@ -303,6 +302,13 @@ class UserController extends ValidatingController
     {
         return $this->baseSelect ??= $this->sql
             ->select('users')
-            ->columns(['id', 'email', 'first_name', 'last_name', 'email_verified_at']);
+            ->columns([
+                'id',
+                'email',
+                'first_name',
+                'last_name',
+                'email_verified_at',
+                'password_changed_at',
+            ]);
     }
 }

@@ -6,7 +6,6 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
-use App\Services\DateTimeService;
 use App\Services\PasswordService;
 use App\Validators\BaseValidator;
 use App\Validators\PasswordValidator;
@@ -62,14 +61,16 @@ class PasswordController extends ValidatingController
             ]);
         }
 
-        $cooldownCutoff = DateTimeService::now()->sub(new DateInterval('PT24H'));
+        $cooldownCutoff = now()->sub(new DateInterval('PT24H'));
         $cooldownException = new HttpUnprocessableEntityException($request, [
             'new_password' => 'Password can only be changed once every 24 hours.',
         ]);
 
+        $password_changed_at = $user['password_changed_at'];
+
         if (
-            $user['password_changed_at'] !== null
-            && DateTimeService::make($user['password_changed_at']) > $cooldownCutoff
+            $password_changed_at !== null
+            && parseDateTime($password_changed_at) > $cooldownCutoff
         ) {
             throw $cooldownException;
         }

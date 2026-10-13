@@ -32,15 +32,15 @@ class EmailVerificationService
             )
             ->execute();
 
-        $token = TokenService::generateToken();
-        $expiresAt = DateTimeService::now()->modify($this->config->get('email-verification.ttl'));
+        $token = generateToken();
+        $expiresAt = now()->modify($this->config->get('email-verification.ttl'));
 
         $insert = $this->sql
             ->insert('email_verification_tokens')
             ->values([
                 'user_id' => $user_id,
-                'token_hash' => TokenService::hash($token),
-                'expires_at' => $expiresAt->format(DateTimeService::FORMAT),
+                'token_hash' => hashToken($token),
+                'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
             ]);
 
         $this->sql
@@ -71,9 +71,9 @@ class EmailVerificationService
             return false;
         }
 
-        $now = DateTimeService::now(true);
+        $now = now(true);
         $predicate = [
-            'token_hash' => TokenService::hash($token),
+            'token_hash' => hashToken($token),
             'expires_at > ?' => $now,
         ];
 
@@ -93,7 +93,7 @@ class EmailVerificationService
         }
 
         $consumePredicate = [
-            'token_hash' => TokenService::hash($token),
+            'token_hash' => hashToken($token),
             'expires_at > ?' => $now,
         ];
         $consume = $this->sql

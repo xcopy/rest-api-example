@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Middlewares;
 
-use App\Services\DateTimeService;
-use App\Services\TokenService;
 use DI\Attribute\Inject;
 use Laminas\Db\Sql\Sql;
 use Psr\Http\Message\ResponseInterface;
@@ -27,7 +25,7 @@ class AuthenticationMiddleware implements MiddlewareInterface
             throw new HttpUnauthorizedException($request);
         }
 
-        $token_hash = TokenService::hash($matches[1]);
+        $token_hash = hashToken($matches[1]);
 
         $select = $this->sql
             ->select('user_tokens')
@@ -35,7 +33,7 @@ class AuthenticationMiddleware implements MiddlewareInterface
             ->join('users', 'user_tokens.user_id = users.id', ['id'])
             ->where([
                 'user_tokens.token_hash' => $token_hash,
-                'user_tokens.expires_at > ?' => DateTimeService::now(true),
+                'user_tokens.expires_at > ?' => now(true),
             ])
             ->limit(1);
 

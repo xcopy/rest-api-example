@@ -6,8 +6,6 @@ namespace App\Middlewares;
 
 use App\Handlers\ErrorHandler;
 use App\Services\ConfigService;
-use App\Services\DateTimeService;
-use App\Services\TokenService;
 use DI\Attribute\Inject;
 use Predis\ClientInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -36,10 +34,10 @@ class RateLimitMiddleware implements MiddlewareInterface
 
         $config = $this->config->get('rate-limit');
 
-        $now = DateTimeService::now()->getTimestamp();
+        $now = now()->getTimestamp();
         $windowStart = intdiv($now, $config['window']) * $config['window'];
         $resetAfter = ($windowStart + $config['window']) - $now;
-        $key = sprintf('rate-limit:%s:%d', TokenService::hash($packedAddress), $windowStart);
+        $key = sprintf('rate-limit:%s:%d', hashToken($packedAddress), $windowStart);
 
         $requestCount = $this->redis->eval(
             <<<'LUA'

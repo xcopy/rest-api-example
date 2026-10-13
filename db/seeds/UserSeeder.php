@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 error_reporting(E_ALL & ~E_DEPRECATED);
 
-use App\Services\DateTimeService;
 use App\Services\PasswordService;
 use Faker\Factory;
 use Phinx\Seed\AbstractSeed;
@@ -21,13 +20,13 @@ class UserSeeder extends AbstractSeed
                 'first_name' => 'Kairat',
                 'last_name' => 'Jenihev',
                 'password' => $password,
-                'email_verified_at' => DateTimeService::now(true),
+                'email_verified_at' => now(true),
             ],
         ];
 
         $faker = Factory::create();
 
-        for ($i = 0; $i < 50; $i++) {
+        for ($i = 0; $i < 20; $i++) {
             $data[] = [
                 'email' => $faker->safeEmail,
                 'first_name' => $faker->firstName,

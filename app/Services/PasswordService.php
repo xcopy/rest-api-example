@@ -38,15 +38,15 @@ class PasswordService
             ->prepareStatementForSqlObject($delete)
             ->execute();
 
-        $token = TokenService::generateToken();
-        $expiresAt = DateTimeService::now()->modify($this->config->get('password.reset_ttl'));
+        $token = generateToken();
+        $expiresAt = now()->modify($this->config->get('password.reset_ttl'));
 
         $insert = $this->sql
             ->insert('password_reset_tokens')
             ->values([
                 'user_id' => $user_id,
-                'token_hash' => TokenService::hash($token),
-                'expires_at' => $expiresAt->format(DateTimeService::FORMAT),
+                'token_hash' => hashToken($token),
+                'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
             ]);
 
         $this->sql
@@ -78,9 +78,9 @@ class PasswordService
             return false;
         }
 
-        $now = DateTimeService::now(true);
+        $now = now(true);
         $predicate = [
-            'token_hash' => TokenService::hash($token),
+            'token_hash' => hashToken($token),
             'expires_at > ?' => $now,
         ];
 
@@ -107,7 +107,7 @@ class PasswordService
             $consume = $this->sql
                 ->delete('password_reset_tokens')
                 ->where([
-                    'token_hash' => TokenService::hash($token),
+                    'token_hash' => hashToken($token),
                     'expires_at > ?' => $now,
                 ]);
 
@@ -142,7 +142,7 @@ class PasswordService
         string $password,
         ?DateTimeImmutable $changedBefore = null
     ): bool {
-        $now = DateTimeService::now(true);
+        $now = now(true);
         $update = $this->sql
             ->update('users')
             ->set([
@@ -154,7 +154,7 @@ class PasswordService
 
         if ($changedBefore !== null) {
             $update->where([
-                '(password_changed_at IS NULL OR password_changed_at <= ?)' => $changedBefore->format(DateTimeService::FORMAT),
+                '(password_changed_at IS NULL OR password_changed_at <= ?)' => $changedBefore->format(DATE_FORMAT_DB),
             ]);
         }
 
