@@ -4,19 +4,16 @@ declare(strict_types=1);
 
 namespace App\Validators;
 
+use DI\Attribute\Inject;
 use Leaf\Form;
 
 abstract class Validator
 {
+    #[Inject]
     protected Form $form;
 
     /** @var array<string, string|list<string>> */
     protected array $errors = [];
-
-    public function __construct(Form $form)
-    {
-        $this->form = $form;
-    }
 
     /**
      * @param array<string, mixed> $context

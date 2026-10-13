@@ -8,7 +8,6 @@ use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Services\PasswordService;
 use App\Validators\PasswordValidator;
-use App\Validators\Validator;
 use DateInterval;
 use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -18,11 +17,11 @@ use Slim\Exception\HttpUnauthorizedException;
 class PasswordController extends ValidatingController
 {
     #[Inject]
-    protected PasswordService $passwordService;
+    protected PasswordService $password;
 
-    protected function getValidator(): Validator
+    protected function getValidatorClass(): string
     {
-        return new PasswordValidator($this->form);
+        return PasswordValidator::class;
     }
 
     public function change(Request $request, Response $response): Response
@@ -75,7 +74,7 @@ class PasswordController extends ValidatingController
             throw $cooldownException;
         }
 
-        if (!$this->passwordService->change($user_id, $new_password, $cooldownCutoff)) {
+        if (!$this->password->change($user_id, $new_password, $cooldownCutoff)) {
             throw $cooldownException;
         }
 
@@ -107,7 +106,7 @@ class PasswordController extends ValidatingController
         $token = null;
 
         if ($user !== false) {
-            $this->passwordService->sendReset((int) $user['id'], $user['email'], $token);
+            $this->password->sendReset((int) $user['id'], $user['email'], $token);
         }
 
         $data = $this->config->get('app.env') === 'local' ? compact('token') : null;
@@ -120,7 +119,7 @@ class PasswordController extends ValidatingController
         // body: token, new_password, new_password_repeat
         $data = $this->validateRequest($request, 'reset');
 
-        if (!$this->passwordService->reset($data['token'], $data['new_password'])) {
+        if (!$this->password->reset($data['token'], $data['new_password'])) {
             throw new HttpUnprocessableEntityException($request, [
                 'token' => 'The password reset token is invalid or expired.',
             ]);

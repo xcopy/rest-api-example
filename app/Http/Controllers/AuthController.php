@@ -6,7 +6,6 @@ namespace App\Http\Controllers;
 
 use App\Http\JsonResponse;
 use App\Validators\AuthValidator;
-use App\Validators\Validator;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpForbiddenException;
@@ -14,9 +13,9 @@ use Slim\Exception\HttpUnauthorizedException;
 
 class AuthController extends ValidatingController
 {
-    protected function getValidator(): Validator
+    protected function getValidatorClass(): string
     {
-        return new AuthValidator($this->form);
+        return AuthValidator::class;
     }
 
     public function login(Request $request, Response $response): Response

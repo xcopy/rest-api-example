@@ -9,7 +9,6 @@ use App\Policies\UserPolicy;
 use App\Services\EmailVerificationService;
 use App\Services\PasswordService;
 use App\Validators\UserValidator;
-use App\Validators\Validator;
 use DI\Attribute\Inject;
 use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Select;
@@ -28,9 +27,9 @@ class UserController extends ValidatingController
     #[Inject]
     protected UserPolicy $policy;
 
-    protected function getValidator(): Validator
+    protected function getValidatorClass(): string
     {
-        return new UserValidator($this->form);
+        return UserValidator::class;
     }
 
     public function index(Request $request, Response $response): Response
