@@ -10,7 +10,7 @@ use App\Http\JsonResponse;
 use App\Middlewares\AuthenticationMiddleware;
 use App\Middlewares\LowerFilterMiddleware;
 use App\Middlewares\RbacMiddleware;
-use Laminas\Db\Adapter\Adapter;
+use Laminas\Db\Sql\Sql;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\App;
@@ -78,7 +78,7 @@ return function (App $app) use ($authMiddleware, $lowerFilterMiddleware) {
             $id = '/{id:[0-9]+}';
 
             $authMiddleware = fn(string $permission) => new RbacMiddleware(
-                $group->getContainer()->get(Adapter::class),
+                $group->getContainer()->get(Sql::class),
                 $permission
             );
 
