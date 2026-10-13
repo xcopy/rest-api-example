@@ -1,0 +1,105 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Repositories;
+
+use DI\Attribute\Inject;
+use Laminas\Db\Sql\Sql;
+use RuntimeException;
+
+abstract class Repository
+{
+    #[Inject]
+    protected Sql $sql;
+
+    abstract protected function getTable(): string;
+
+    /** @param array<string, mixed> $where
+     *  @return list<array<string, mixed>>
+     */
+    public function findAll(array $where = []): array
+    {
+        $select = $this->sql->select($this->getTable());
+
+        if ($where !== []) {
+            $select->where($where);
+        }
+
+        $result = $this->sql
+            ->prepareStatementForSqlObject($select)
+            ->execute();
+
+        return iterator_to_array($result, false);
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findOne(int $id): ?array
+    {
+        $select = $this->sql
+            ->select($this->getTable())
+            ->where(compact('id'))
+            ->limit(1);
+
+        $result = $this->sql
+            ->prepareStatementForSqlObject($select)
+            ->execute()
+            ->current();
+
+        return $result === false ? null : $result;
+    }
+
+    /** @param array<string, mixed> $data */
+    public function insert(array $data): int|string|null
+    {
+        $insert = $this->sql
+            ->insert($this->getTable())
+            ->values($data);
+
+        $result = $this->sql
+            ->prepareStatementForSqlObject($insert)
+            ->execute();
+
+        $id = $result->getGeneratedValue();
+
+        return $id === '' ? null : $id;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $where
+     */
+    public function update(array $data, array $where): bool
+    {
+        if ($where === []) {
+            throw new RuntimeException('A where condition is required to update repository records.');
+        }
+
+        $update = $this->sql
+            ->update($this->getTable())
+            ->set($data)
+            ->where($where);
+
+        return $this->sql
+            ->prepareStatementForSqlObject($update)
+            ->execute()
+            ->getAffectedRows() > 0;
+    }
+
+    /** @param array<string, mixed> $where */
+    public function delete(array $where): bool
+    {
+        if ($where === []) {
+            throw new RuntimeException('A where condition is required to delete repository records.');
+        }
+
+        $delete = $this->sql
+            ->delete($this->getTable())
+            ->where($where);
+
+        return $this->sql
+            ->prepareStatementForSqlObject($delete)
+            ->execute()
+            ->getAffectedRows() > 0;
+    }
+}
