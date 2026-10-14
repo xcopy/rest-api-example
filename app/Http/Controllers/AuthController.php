@@ -8,7 +8,6 @@ use App\Http\JsonResponse;
 use App\Validators\AuthValidator;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Exception\HttpForbiddenException;
 use Slim\Exception\HttpUnauthorizedException;
 
 class AuthController extends ValidatingController
@@ -37,10 +36,6 @@ class AuthController extends ValidatingController
 
         if (!$successfull) {
             throw new HttpUnauthorizedException($request, 'Invalid email or password.');
-        }
-
-        if ($user['email_verified_at'] === null) {
-            throw new HttpForbiddenException($request, 'Email address is not verified.');
         }
 
         $token = generateToken();

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 error_reporting(E_ALL & ~E_DEPRECATED);
 
-use Faker\Factory;
+// use Faker\Factory;
 use Phinx\Seed\AbstractSeed;
 
 class UserSeeder extends AbstractSeed
@@ -19,10 +19,11 @@ class UserSeeder extends AbstractSeed
                 'first_name' => 'Kairat',
                 'last_name' => 'Jenihev',
                 'password' => $password,
-                'email_verified_at' => now(true),
+                // 'email_verified_at' => now(true),
             ],
         ];
 
+        /*
         $faker = Factory::create();
 
         for ($i = 0; $i < 20; $i++) {
@@ -33,6 +34,7 @@ class UserSeeder extends AbstractSeed
                 'password' => $password,
             ];
         }
+        */
 
         $this->execute('delete from user_tokens');
         $this->execute('delete from role_user');

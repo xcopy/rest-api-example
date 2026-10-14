@@ -16,7 +16,7 @@ class EmailVerificationValidator extends Validator
         return match ($scenario) {
             'send' => ['email' => 'email'],
             'verify' => ['token' => 'string'],
-            default => throw new InvalidArgumentException(sprintf('Unsupported email verification scenario: %s', $scenario)),
+            default => throw new InvalidArgumentException(sprintf('Unsupported scenario: %s', $scenario)),
         };
     }
 }

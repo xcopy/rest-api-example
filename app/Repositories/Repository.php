@@ -84,7 +84,7 @@ abstract class Repository
      * @param array<string, mixed> $data
      * @param array<string, mixed> $where
      */
-    public function update(array $data, array $where): bool
+    public function update(array $data, array $where): int
     {
         if ($where === []) {
             throw new RuntimeException('A where condition is required to update repository records.');
@@ -98,11 +98,11 @@ abstract class Repository
         return $this->sql
             ->prepareStatementForSqlObject($update)
             ->execute()
-            ->getAffectedRows() > 0;
+            ->getAffectedRows();
     }
 
     /** @param array<string, mixed> $where */
-    public function delete(array $where): bool
+    public function delete(array $where): int
     {
         if ($where === []) {
             throw new RuntimeException('A where condition is required to delete repository records.');
@@ -115,6 +115,6 @@ abstract class Repository
         return $this->sql
             ->prepareStatementForSqlObject($delete)
             ->execute()
-            ->getAffectedRows() > 0;
+            ->getAffectedRows();
     }
 }

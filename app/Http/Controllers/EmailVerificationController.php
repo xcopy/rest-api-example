@@ -4,52 +4,26 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\HttpUnprocessableEntityException;
 use App\Http\JsonResponse;
 use App\Services\EmailVerificationService;
-use App\Validators\EmailVerificationValidator;
+use App\Services\UserService;
 use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Exception\HttpNotFoundException;
 
-class EmailVerificationController extends ValidatingController
+class EmailVerificationController extends Controller
 {
     #[Inject]
     protected EmailVerificationService $emailVerification;
 
-    protected function getValidatorClass(): string
-    {
-        return EmailVerificationValidator::class;
-    }
+    #[Inject]
+    protected UserService $users;
 
     public function send(Request $request, Response $response): Response
     {
-        // body: email
-        $data = $this->validateRequest($request, 'send');
+        $email = $request->getAttribute('email', '');
 
-        $select = $this->sql
-            ->select('users')
-            ->columns(['id', 'email', 'email_verified_at'])
-            ->where(['email' => $data['email']])
-            ->limit(1);
-
-        $user = $this->sql
-            ->prepareStatementForSqlObject($select)
-            ->execute()
-            ->current();
-
-        if ($user === false) {
-            throw new HttpNotFoundException($request);
-        }
-
-        if ($user['email_verified_at'] !== null) {
-            throw new HttpUnprocessableEntityException($request, [
-                'email' => 'Email address is already verified.',
-            ]);
-        }
-
-        $this->emailVerification->send((int) $user['id'], $user['email'], $token);
+        $this->emailVerification->send($email, $token);
 
         $data = $this->config->get('app.env') === 'local' ? compact('token') : null;
 
@@ -58,14 +32,9 @@ class EmailVerificationController extends ValidatingController
 
     public function verify(Request $request, Response $response): Response
     {
-        // body: token
-        $data = $this->validateRequest($request, 'verify');
+        $data = $request->getParsedBody() ?? [];
 
-        if (!$this->emailVerification->verify($data['token'])) {
-            throw new HttpUnprocessableEntityException($request, [
-                'token' => 'The verification token is invalid or expired.',
-            ]);
-        }
+        $this->emailVerification->verify($data['token'] ?? '');
 
         return JsonResponse::write($response, status: 204);
     }

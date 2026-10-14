@@ -28,9 +28,6 @@ class UserService
     #[Inject]
     protected Sql $sql;
 
-    #[Inject]
-    protected EmailVerificationService $emailVerification;
-
     protected function repositoryClass(): string
     {
         return UserRepository::class;
@@ -98,32 +95,33 @@ class UserService
             throw $e;
         }
 
-        $this->emailVerification->send($user_id, $user['email']);
-
         return $user;
     }
 
     /** @param array<string, string> $data */
-    public function update(int $id, array $data): bool
+    public function update(int $id, array $data): void
     {
         $this->findOne($id);
 
         $data = $this->validate($data, 'update');
 
-        return $this->getRepository()->update($data, compact('id'));
+        $this->getRepository()->update($data, compact('id'));
     }
 
-    public function delete(int $id): bool
+    public function delete(int $id): void
     {
         $this->findOne($id);
 
-        return $this->getRepository()->delete(compact('id'));
+        $this->getRepository()->delete(compact('id'));
     }
 
-    /** @return array<string, mixed> */
-    public function findOne(int $id): array
+    /**
+     * @param int|array<string, mixed> $where
+     * @return array<string, mixed>
+     */
+    public function findOne(int|array $where): array
     {
-        $user = $this->getRepository()->findOne($id);
+        $user = $this->getRepository()->findOne($where);
 
         if ($user === null) {
             throw new NotFoundException();

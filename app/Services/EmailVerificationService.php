@@ -4,11 +4,26 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Concerns\HasFactory;
+use App\Exceptions\BadRequestException;
+use App\Exceptions\ConflictException;
+use App\Exceptions\NotFoundException;
+use App\Repositories\UserRepository;
+use App\Services\Concerns\ValidatesData;
+use App\Validators\EmailVerificationValidator;
 use DI\Attribute\Inject;
+use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
+use Throwable;
 
 class EmailVerificationService
 {
+    use HasFactory;
+    use ValidatesData;
+
+    #[Inject]
+    protected Adapter $db;
+
     #[Inject]
     protected Sql $sql;
 
@@ -16,40 +31,68 @@ class EmailVerificationService
     protected ConfigService $config;
 
     #[Inject]
-    protected EmailService $emailService;
+    protected EmailService $email;
 
-    public function send(int $user_id, string $email, ?string &$token = null): void
+    #[Inject]
+    protected UserRepository $userRepository;
+
+    protected function validatorClass(): string
     {
-        $this->sql
-            ->prepareStatementForSqlObject(
-                $this->sql->delete('email_verification_tokens')->where(['user_id' => $user_id])
-            )
-            ->execute();
+        return EmailVerificationValidator::class;
+    }
 
-        $this->sql
-            ->prepareStatementForSqlObject(
-                $this->sql->delete('user_tokens')->where(['user_id' => $user_id])
-            )
-            ->execute();
+    public function send(string $email, ?string &$token = null): void
+    {
+        $data = $this->validate(compact('email'), 'send');
 
+        $user = $this->userRepository->findOne(['email' => $data['email']]);
+
+        if ($user === null) {
+            throw new NotFoundException('User with this email not found.');
+        }
+
+        if ($user['email_verified_at'] !== null) {
+            throw new ConflictException('Email address is already verified');
+        }
+
+        $user_id = $user['id'];
+        $email = $user['email'];
         $token = generateToken();
         $expiresAt = now()->modify($this->config->get('email-verification.ttl'));
 
-        $insert = $this->sql
-            ->insert('email_verification_tokens')
-            ->values([
-                'user_id' => $user_id,
-                'token_hash' => hashToken($token),
-                'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
-            ]);
+        $connection = $this->db->getDriver()->getConnection();
+        $connection->beginTransaction();
 
-        $this->sql
-            ->prepareStatementForSqlObject($insert)
-            ->execute();
+        try {
+            $revokeEmailVerificationTokens = $this->sql
+                ->delete('email_verification_tokens')
+                ->where(compact('user_id'));
 
-        $verificationUrl = rtrim($this->config->get('app.base_url'), '/') . '/auth/verify-email';
+            $this->sql
+                ->prepareStatementForSqlObject($revokeEmailVerificationTokens)
+                ->execute();
 
-        $message = $this->emailService
+            $insert = $this->sql
+                ->insert('email_verification_tokens')
+                ->values([
+                    'user_id' => $user_id,
+                    'token_hash' => hashToken($token),
+                    'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
+                ]);
+
+            $this->sql
+                ->prepareStatementForSqlObject($insert)
+                ->execute();
+
+            $connection->commit();
+        } catch (Throwable $e) {
+            $connection->rollback();
+            throw $e;
+        }
+
+        $url = rtrim($this->config->get('app.base_url'), '/') . '/auth/verify-email';
+
+        $message = $this->email
             ->compose()
             ->to($email)
             ->subject('Verify your email address')
@@ -57,68 +100,76 @@ class EmailVerificationService
                 "Hello,\n\nTo verify your email address, send a POST request to:\n%s\n\n"
                     . "with this JSON body:\n{\"token\":\"%s\"}\n\n"
                     . "This token expires at %s.\n",
-                $verificationUrl,
+                $url,
                 $token,
                 $expiresAt->format(DATE_ATOM)
             ));
 
-        $this->emailService->send($message);
+        $this->email->send($message);
     }
 
     public function verify(string $token): bool
     {
-        if (!preg_match('/^[a-f0-9]{64}$/i', $token)) {
-            return false;
-        }
+        $data = $this->validate(compact('token'), 'verify');
 
         $now = now(true);
-        $predicate = [
-            'token_hash' => hashToken($token),
+        $where = [
+            'token_hash' => hashToken($data['token']),
             'expires_at > ?' => $now,
         ];
 
-        $select = $this->sql
-            ->select('email_verification_tokens')
-            ->columns(['user_id'])
-            ->where($predicate)
-            ->limit(1);
+        $connection = $this->db->getDriver()->getConnection();
+        $connection->beginTransaction();
 
-        $verificationToken = $this->sql
-            ->prepareStatementForSqlObject($select)
-            ->execute()
-            ->current();
+        try {
+            $select = $this->sql
+                ->select('email_verification_tokens')
+                ->columns(['user_id'])
+                ->where($where)
+                ->limit(1);
 
-        if ($verificationToken === false) {
-            return false;
+            $verificationToken = $this->sql
+                ->prepareStatementForSqlObject($select)
+                ->execute()
+                ->current();
+
+            if ($verificationToken === false) {
+                throw new BadRequestException('The verification token is invalid or expired');
+            }
+
+            $consume = $this->sql
+                ->delete('email_verification_tokens')
+                ->where($where);
+
+            $consumed = $this->sql
+                ->prepareStatementForSqlObject($consume)
+                ->execute();
+
+            if ($consumed->getAffectedRows() !== 1) {
+                $connection->rollback();
+                return false;
+            }
+
+            $result = $this->userRepository
+                ->update(
+                    [
+                        'email_verified_at' => $now,
+                        'updated_at' => $now,
+                    ],
+                    ['id' => (int) $verificationToken['user_id']]
+                );
+
+            if ($result !== 1) {
+                $connection->rollback();
+                return false;
+            }
+
+            $connection->commit();
+
+            return true;
+        } catch (Throwable $e) {
+            $connection->rollback();
+            throw $e;
         }
-
-        $consumePredicate = [
-            'token_hash' => hashToken($token),
-            'expires_at > ?' => $now,
-        ];
-        $consume = $this->sql
-            ->delete('email_verification_tokens')
-            ->where($consumePredicate);
-
-        $consumed = $this->sql
-            ->prepareStatementForSqlObject($consume)
-            ->execute();
-
-        if ($consumed->getAffectedRows() !== 1) {
-            return false;
-        }
-
-        $user_id = (int) $verificationToken['user_id'];
-
-        $update = $this->sql
-            ->update('users')
-            ->set(['email_verified_at' => $now])
-            ->where(['id' => $user_id]);
-
-        $this->sql
-            ->prepareStatementForSqlObject($update)
-            ->execute();
-
-        return true;
     }
 }

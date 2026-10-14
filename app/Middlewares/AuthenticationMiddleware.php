@@ -30,7 +30,7 @@ class AuthenticationMiddleware implements MiddlewareInterface
         $select = $this->sql
             ->select('user_tokens')
             ->columns([])
-            ->join('users', 'user_tokens.user_id = users.id', ['id'])
+            ->join('users', 'user_tokens.user_id = users.id', ['id', 'email'])
             ->where([
                 'user_tokens.token_hash' => $token_hash,
                 'user_tokens.expires_at > ?' => now(true),
@@ -49,6 +49,7 @@ class AuthenticationMiddleware implements MiddlewareInterface
         return $handler->handle(
             $request
                 ->withAttribute('user_id', $user['id'])
+                ->withAttribute('email', $user['email'])
                 ->withAttribute('token_hash', $token_hash)
         );
     }

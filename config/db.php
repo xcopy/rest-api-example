@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Pdo\Mysql;
+
 $sqlite = fn(string $env) => [
     'driver' => 'Pdo_Sqlite',
     'database' => dirname(__DIR__) . "/db/db-{$env}.sqlite3",
@@ -18,5 +20,8 @@ return [
         'username' => getenv('MYSQL_USERNAME') ?: '',
         'password' => getenv('MYSQL_PASSWORD') ?: '',
         'charset' => getenv('MYSQL_CHARSET') ?: 'utf8mb4',
+        'driver_options' => [
+            Mysql::ATTR_FOUND_ROWS => true,
+        ],
     ],
 ];

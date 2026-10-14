@@ -36,23 +36,15 @@ return function (App $app) use ($authMiddleware, $lowerFilterMiddleware) {
         $group
             ->post('/logout-all', [$controllerClass, 'logoutAll'])
             ->add($authMiddleware);
-
-        $group
-            ->post('/change-password', [$controllerClass, 'changePassword'])
-            ->add($authMiddleware);
-        $group
-            ->post('/forgot-password', [$controllerClass, 'forgotPassword'])
-            ->add($lowerFilterMiddleware);
-        $group->post('/reset-password', [$controllerClass, 'resetPassword']);
     });
 
     // email-verification
-    $app->group('/email-verification', function (RouteCollectorProxy $group) use ($lowerFilterMiddleware) {
+    $app->group('/email-verification', function (RouteCollectorProxy $group) use ($authMiddleware) {
         $controllerClass = EmailVerificationController::class;
 
         $group
             ->post('/send', [$controllerClass, 'send'])
-            ->add($lowerFilterMiddleware);
+            ->add($authMiddleware);
         $group->post('/verify', [$controllerClass, 'verify']);
     });
 
@@ -71,13 +63,12 @@ return function (App $app) use ($authMiddleware, $lowerFilterMiddleware) {
 
     // users
     $app
-        ->group('/users', function (RouteCollectorProxy $group) use ($lowerFilterMiddleware) {
+        ->group('/users', function (RouteCollectorProxy $group) {
             $controllerClass = UserController::class;
             $id = '/{id:[0-9]+}';
 
             $group->get($id, [$controllerClass, 'show']);
-            $group->map(['POST', 'PATCH'], $id, [$controllerClass, 'update'])
-                ->add($lowerFilterMiddleware);
+            $group->map(['POST', 'PATCH'], $id, [$controllerClass, 'update']);
             $group->delete($id, [$controllerClass, 'delete']);
         })
         ->add(AuthenticationMiddleware::class);

@@ -21,5 +21,6 @@ return [
         'user' => $production['username'],
         'pass' => $production['password'],
         'charset' => $production['charset'],
+        'driver_options' => $production['driver_options'],
     ],
 ];
