@@ -6,6 +6,7 @@ namespace Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psr\Http\Message\ResponseInterface;
+use RuntimeException;
 use Slim\App;
 use Slim\Psr7\Factory\ServerRequestFactory;
 use Slim\Psr7\Factory\StreamFactory;
@@ -21,7 +22,7 @@ abstract class TestCase extends BaseTestCase
         $env = $_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? getenv('APP_ENV');
 
         if ($env !== 'testing') {
-            throw new \RuntimeException('Tests must run with APP_ENV=testing');
+            throw new RuntimeException('Tests must run with APP_ENV=testing');
         }
 
         // fresh app per test (a new container, no state leaking between tests)

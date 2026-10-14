@@ -8,6 +8,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use stdClass;
 
 class TrimInputMiddleware implements MiddlewareInterface
 {
@@ -89,7 +90,7 @@ class TrimInputMiddleware implements MiddlewareInterface
 
     private function trimObject(object $value): object
     {
-        if (!$value instanceof \stdClass) {
+        if (!$value instanceof stdClass) {
             return $value;
         }
 

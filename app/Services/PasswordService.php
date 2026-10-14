@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DI\Attribute\Inject;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
+use Throwable;
 
 class PasswordService
 {
@@ -130,7 +131,7 @@ class PasswordService
             $connection->commit();
 
             return true;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $connection->rollback();
 
             throw $exception;
