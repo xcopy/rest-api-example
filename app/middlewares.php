@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Error\Renderers\JsonErrorRenderer;
+use App\Exceptions\BadRequestException;
+use App\Exceptions\ConflictException;
 use App\Exceptions\NotFoundException;
 use App\Exceptions\ServiceException;
 use App\Exceptions\UnprocessableEntityException;
@@ -69,7 +71,9 @@ return function (App $app) {
         ServiceException::class,
         function ($request, ServiceException $e) use ($app) {
             $status = match (true) {
+                $e instanceof BadRequestException => 400,
                 $e instanceof NotFoundException => 404,
+                $e instanceof ConflictException => 409,
                 $e instanceof UnprocessableEntityException => 422,
                 default => 400
             };

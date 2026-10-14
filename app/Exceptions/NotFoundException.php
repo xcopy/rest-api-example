@@ -6,8 +6,8 @@ namespace App\Exceptions;
 
 class NotFoundException extends ServiceException
 {
-    public function __construct()
+    public function __construct(string $message = 'Not found')
     {
-        parent::__construct('Not found');
+        parent::__construct($message);
     }
 }
