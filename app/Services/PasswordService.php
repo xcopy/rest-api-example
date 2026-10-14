@@ -24,11 +24,6 @@ class PasswordService
     #[Inject]
     protected EmailService $emailService;
 
-    public static function generateHash(string $password): string
-    {
-        return password_hash($password, PASSWORD_DEFAULT);
-    }
-
     public function sendReset(int $user_id, string $email, ?string &$token = null): void
     {
         $delete = $this->sql
@@ -147,7 +142,7 @@ class PasswordService
         $update = $this->sql
             ->update('users')
             ->set([
-                'password' => self::generateHash($password),
+                'password' => hashPassword($password),
                 'password_changed_at' => $now,
                 'updated_at' => $now,
             ])

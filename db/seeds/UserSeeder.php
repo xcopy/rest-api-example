@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 error_reporting(E_ALL & ~E_DEPRECATED);
 
-use App\Services\PasswordService;
 use Faker\Factory;
 use Phinx\Seed\AbstractSeed;
 
@@ -12,7 +11,7 @@ class UserSeeder extends AbstractSeed
 {
     public function run(): void
     {
-        $password = PasswordService::generateHash('xx');
+        $password = hashPassword('xx');
 
         $data = [
             [

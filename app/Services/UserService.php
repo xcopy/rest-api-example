@@ -48,7 +48,7 @@ class UserService
     public function create(array $data): array
     {
         $data = $this->validate($data, 'create');
-        $data['password'] = PasswordService::generateHash($data['password']);
+        $data['password'] = hashPassword($data['password']);
 
         $repository = $this->getRepository();
 

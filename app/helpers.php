@@ -31,3 +31,21 @@ if (!function_exists('hashToken')) {
         return hash('sha256', $value);
     }
 }
+
+if (!function_exists('hashPassword')) {
+    function hashPassword(string $password): string
+    {
+        return password_hash($password, PASSWORD_DEFAULT);
+    }
+}
+
+if (!function_exists('checkPassword')) {
+    function checkPassword(string $password, string $hash): bool
+    {
+        if ($password === '' || $hash === '') {
+            throw new InvalidArgumentException('Password or/and hash cannot be empty.');
+        }
+
+        return password_verify($password, $hash);
+    }
+}

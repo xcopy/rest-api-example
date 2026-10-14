@@ -33,7 +33,7 @@ class AuthController extends ValidatingController
             ->execute()
             ->current();
 
-        $successfull = $user && password_verify($data['password'], $user['password']);
+        $successfull = $user && checkPassword($data['password'], $user['password']);
 
         if (!$successfull) {
             throw new HttpUnauthorizedException($request, 'Invalid email or password.');

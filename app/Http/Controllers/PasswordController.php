@@ -46,7 +46,7 @@ class PasswordController extends ValidatingController
             throw new HttpUnauthorizedException($request);
         }
 
-        if (!password_verify($data['current_password'], $user['password'])) {
+        if (!checkPassword($data['current_password'], $user['password'])) {
             throw new HttpUnprocessableEntityException($request, [
                 'current_password' => 'Current password is incorrect.',
             ]);
@@ -54,7 +54,7 @@ class PasswordController extends ValidatingController
 
         $new_password = $data['new_password'];
 
-        if (password_verify($new_password, $user['password'])) {
+        if (checkPassword($new_password, $user['password'])) {
             throw new HttpUnprocessableEntityException($request, [
                 'new_password' => 'New password must be different from the current password.',
             ]);
