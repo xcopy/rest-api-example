@@ -15,12 +15,17 @@ abstract class Repository
 
     abstract protected function getTable(): string;
 
+    /** @return array<string> */
+    abstract protected function getColumns(): array;
+
     /** @param array<string, mixed> $where
      *  @return list<array<string, mixed>>
      */
     public function findAll(array $where = []): array
     {
-        $select = $this->sql->select($this->getTable());
+        $select = $this->sql
+            ->select($this->getTable())
+            ->columns($this->getColumns());
 
         if ($where !== []) {
             $select->where($where);
@@ -38,6 +43,7 @@ abstract class Repository
     {
         $select = $this->sql
             ->select($this->getTable())
+            ->columns($this->getColumns())
             ->where(compact('id'))
             ->limit(1);
 
@@ -50,7 +56,7 @@ abstract class Repository
     }
 
     /** @param array<string, mixed> $data */
-    public function insert(array $data): int|string|null
+    public function insert(array $data): int
     {
         $insert = $this->sql
             ->insert($this->getTable())
@@ -60,9 +66,7 @@ abstract class Repository
             ->prepareStatementForSqlObject($insert)
             ->execute();
 
-        $id = $result->getGeneratedValue();
-
-        return $id === '' ? null : $id;
+        return (int) $result->getGeneratedValue();
     }
 
     /**

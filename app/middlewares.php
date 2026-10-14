@@ -3,7 +3,11 @@
 declare(strict_types=1);
 
 use App\Error\Renderers\JsonErrorRenderer;
+use App\Exceptions\NotFoundException;
+use App\Exceptions\ServiceException;
+use App\Exceptions\UnprocessableEntityException;
 use App\Handlers\ErrorHandler;
+use App\Http\JsonResponse;
 use App\Middlewares\CorsMiddleware;
 use App\Middlewares\RateLimitMiddleware;
 use App\Middlewares\TrimInputMiddleware;
@@ -60,6 +64,27 @@ return function (App $app) {
         logErrorDetails: true
     );
     $errorMiddleware->setDefaultErrorHandler($errorHandler);
+    // domain/service exceptions -> HTTP exceptions mapping
+    $errorMiddleware->setErrorHandler(
+        ServiceException::class,
+        function ($request, ServiceException $e) use ($app) {
+            $status = match (true) {
+                $e instanceof NotFoundException => 404,
+                $e instanceof UnprocessableEntityException => 422,
+                default => 400
+            };
+
+            $response = $app->getResponseFactory()->createResponse($status);
+            $data = ['message' => $e->getMessage()];
+
+            if ($e instanceof UnprocessableEntityException) {
+                $data['errors'] = $e->getErrors();
+            }
+
+            return JsonResponse::write($response, $data, $status);
+        },
+        handleSubclasses: true
+    );
 
     $app->add(CorsMiddleware::class);
 };

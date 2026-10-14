@@ -10,4 +10,17 @@ class UserRepository extends Repository
     {
         return 'users';
     }
+
+    /** @return array<string> */
+    protected function getColumns(): array
+    {
+        return [
+            'id',
+            'email',
+            'first_name',
+            'last_name',
+            'email_verified_at',
+            'password_changed_at',
+        ];
+    }
 }
