@@ -38,13 +38,24 @@ abstract class Repository
         return iterator_to_array($result, false);
     }
 
-    /** @return array<string, mixed>|null */
-    public function findOne(int $id): ?array
+    /**
+     * @param int|array<string, mixed> $where
+     * @return array<string, mixed>|null
+     */
+    public function findOne(int|array $where): ?array
     {
+        if ($where === []) {
+            throw new RuntimeException('A where condition is required to find a repository record.');
+        }
+
+        if (is_int($where)) {
+            $where = ['id' => $where];
+        }
+
         $select = $this->sql
             ->select($this->getTable())
             ->columns($this->getColumns())
-            ->where(compact('id'))
+            ->where($where)
             ->limit(1);
 
         $result = $this->sql
