@@ -26,7 +26,7 @@ class PasswordValidator extends Validator
             'change' => [
                 'current_password' => 'string|min:1',
             ] + $rules,
-            default => throw new InvalidArgumentException(sprintf('Unsupported password scenario: %s', $scenario)),
+            default => throw new InvalidArgumentException(sprintf('Unsupported scenario: %s', $scenario)),
         };
     }
 }

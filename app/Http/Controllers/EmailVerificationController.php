@@ -6,7 +6,6 @@ namespace App\Http\Controllers;
 
 use App\Http\JsonResponse;
 use App\Services\EmailVerificationService;
-use App\Services\UserService;
 use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -15,9 +14,6 @@ class EmailVerificationController extends Controller
 {
     #[Inject]
     protected EmailVerificationService $emailVerification;
-
-    #[Inject]
-    protected UserService $users;
 
     public function send(Request $request, Response $response): Response
     {
