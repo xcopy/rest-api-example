@@ -9,8 +9,6 @@ use App\Http\Controllers\UserController;
 use App\Http\JsonResponse;
 use App\Middlewares\AuthenticationMiddleware;
 use App\Middlewares\LowerFilterMiddleware;
-use App\Middlewares\RbacMiddleware;
-use Laminas\Db\Sql\Sql;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\App;
@@ -77,26 +75,10 @@ return function (App $app) use ($authMiddleware, $lowerFilterMiddleware) {
             $controllerClass = UserController::class;
             $id = '/{id:[0-9]+}';
 
-            $authMiddleware = fn(string $permission) => new RbacMiddleware(
-                $group->getContainer()->get(Sql::class),
-                $permission
-            );
-
-            $group->get('', [$controllerClass, 'index'])
-                ->add($authMiddleware('list users'));
-            $group->get($id, [$controllerClass, 'show'])
-                ->add($authMiddleware('show user'));
-            $group->post('', [$controllerClass, 'create'])
-                ->add($lowerFilterMiddleware)
-                ->add($authMiddleware('create user'));
+            $group->get($id, [$controllerClass, 'show']);
             $group->map(['POST', 'PATCH'], $id, [$controllerClass, 'update'])
-                ->add($lowerFilterMiddleware)
-                ->add($authMiddleware('update user'));
-            $group->put($id, [$controllerClass, 'upsert'])
-                ->add($lowerFilterMiddleware)
-                ->add($authMiddleware('update user'));
-            $group->delete($id, [$controllerClass, 'delete'])
-                ->add($authMiddleware('delete user'));
+                ->add($lowerFilterMiddleware);
+            $group->delete($id, [$controllerClass, 'delete']);
         })
         ->add(AuthenticationMiddleware::class);
 };

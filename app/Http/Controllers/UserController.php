@@ -5,309 +5,38 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\JsonResponse;
-use App\Policies\UserPolicy;
-use App\Services\EmailVerificationService;
-use App\Services\PasswordService;
-use App\Validators\UserValidator;
+use App\Services\UserService;
 use DI\Attribute\Inject;
-use Laminas\Db\Sql\Expression;
-use Laminas\Db\Sql\Select;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use RuntimeException;
-use Slim\Exception\HttpNotFoundException;
 
-class UserController extends ValidatingController
+class UserController
 {
-    private ?Select $baseSelect = null;
-
     #[Inject]
-    protected EmailVerificationService $emailVerification;
-
-    #[Inject]
-    protected UserPolicy $policy;
-
-    protected function getValidatorClass(): string
-    {
-        return UserValidator::class;
-    }
-
-    public function index(Request $request, Response $response): Response
-    {
-        $this->policy->assertCanList($request);
-
-        $queryParams = $request->getQueryParams();
-
-        $page = isset($queryParams['page']) ? max(1, (int) $queryParams['page']) : 1;
-        $perPage = isset($queryParams['per_page']) ? max(1, min(20, (int) $queryParams['per_page'])) : 20;
-
-        $countSelect = (clone $this->getBaseSelect())
-            ->columns(['total' => new Expression('COUNT(*)')]); // overrides base columns
-        $countResult = $this->sql
-            ->prepareStatementForSqlObject($countSelect)
-            ->execute()
-            ->current();
-
-        $totalCount = (int) ($countResult['total'] ?? 0);
-        $totalPages = (int) ceil($totalCount / $perPage);
-
-        $page = min($page, $totalPages > 0 ? $totalPages : 1);
-        $offset = ($page - 1) * $perPage;
-
-        $response = $response
-            ->withHeader('Access-Control-Expose-Headers', 'X-Pagination-Total-Count, X-Pagination-Total-Pages, X-Pagination-Current-Page, X-Pagination-Per-Page')
-            ->withHeader('X-Pagination-Total-Count', (string) $totalCount)
-            ->withHeader('X-Pagination-Total-Pages', (string) $totalPages)
-            ->withHeader('X-Pagination-Current-Page', (string) $page)
-            ->withHeader('X-Pagination-Per-Page', (string) $perPage);
-
-        // Клонируем базовое свойство класса
-        $select = (clone $this->getBaseSelect())
-            ->limit($perPage)
-            ->offset($offset)
-            ->order('id DESC');
-
-        $results = $this->sql
-            ->prepareStatementForSqlObject($select)
-            ->execute();
-
-        $data = iterator_to_array($results);
-
-        return JsonResponse::write($response, $data);
-    }
+    protected UserService $users;
 
     /** @param array<string, string> $args */
     public function show(Request $request, Response $response, array $args): Response
     {
-        $id = $args['id'] ?? null;
-
-        $user = $this->findUser($request, $id);
-
-        $this->policy->assertCanView($request, (int) $id);
-
-        return JsonResponse::write($response, $user);
-    }
-
-    public function create(Request $request, Response $response): Response
-    {
-        $this->policy->assertCanCreate($request);
-
-        $data = $this->validateRequest($request);
-
-        $data['password'] = PasswordService::generateHash($data['password']);
-
-        unset($data['password_repeat']);
-
-        $insert = $this->sql
-            ->insert('users')
-            ->values($data);
-
-        $result = $this->sql
-            ->prepareStatementForSqlObject($insert)
-            ->execute();
-
-        $user_id = (int) $result->getGeneratedValue();
-
-        $this->assignDefaultRole($user_id);
-
-        $select = (clone $this->getBaseSelect())
-            ->where(['id' => $user_id]);
-
-        $user = $this->sql
-            ->prepareStatementForSqlObject($select)
-            ->execute()
-            ->current();
-
-        if ($user === false) {
-            throw new RuntimeException('The newly created user could not be loaded.');
-        }
-
-        $this->emailVerification->send($user_id, $user['email']);
-
-        return JsonResponse::write($response, $user, 201);
+        return JsonResponse::write(
+            $response,
+            $this->users->findOne((int) $args['id'])
+        );
     }
 
     /** @param array<string, string> $args */
     public function update(Request $request, Response $response, array $args): Response
     {
-        $id = $args['id'] ?? null;
-
-        $user = $this->findUser($request, $id);
-
-        $this->policy->assertCanUpdate($request, (int) $id);
-
-        $data = $this->validateRequest($request, 'update', ['user_id' => $id]);
-
-        $emailChanged = isset($data['email']) && $data['email'] !== $user['email'];
-
-        if ($emailChanged) {
-            $data['email_verified_at'] = null;
-        }
-
-        $data['updated_at'] = now(true);
-
-        $update = $this->sql
-            ->update('users')
-            ->where(compact('id'))
-            ->set($data);
-
-        $this->sql
-            ->prepareStatementForSqlObject($update)
-            ->execute();
-
-        if ($emailChanged) {
-            $this->emailVerification->send((int) $id, $data['email']);
-        }
+        $this->users->update((int) $args['id'], $request->getParsedBody() ?? []);
 
         return JsonResponse::write($response, status: 204);
-    }
-
-    /** @param array<string, string> $args */
-    public function upsert(Request $request, Response $response, array $args): Response
-    {
-        $id = $args['id'] ?? null;
-        $currentUser = null;
-
-        try {
-            $currentUser = $this->findUser($request, $id);
-        } catch (HttpNotFoundException) {
-            $currentUser = null;
-        }
-
-        $exists = $currentUser !== null;
-
-        if ($exists) {
-            $this->policy->assertCanUpdate($request, (int) $id);
-        } else {
-            $this->policy->assertCanCreate($request);
-        }
-
-        $data = $this->validateRequest(
-            $request,
-            context: $exists ? ['user_id' => $id] : []
-        );
-
-        $emailChanged = $exists
-            && isset($data['email'])
-            && $data['email'] !== $currentUser['email'];
-
-        if ($exists) {
-            if ($emailChanged) {
-                $data['email_verified_at'] = null;
-            }
-
-            $data['updated_at'] = now(true);
-        } else {
-            $data['id'] = $id;
-        }
-
-        $data['password'] = PasswordService::generateHash($data['password']);
-
-        unset($data['password_repeat']);
-
-        $sql = $exists
-            ? $this->sql->update('users')->set($data)->where(compact('id'))
-            : $this->sql->insert('users')->values($data);
-
-        $this->sql
-            ->prepareStatementForSqlObject($sql)
-            ->execute();
-
-        if (!$exists) {
-            $this->assignDefaultRole((int) $id);
-        }
-
-        if ($emailChanged) {
-            $this->emailVerification->send((int) $id, $data['email']);
-        } elseif (!$exists) {
-            $user = $this->findUser($request, $id);
-            $this->emailVerification->send((int) $id, $user['email']);
-        }
-
-        return JsonResponse::write(
-            $response,
-            $exists ? null : $this->findUser($request, $id),
-            $exists ? 204 : 201
-        );
     }
 
     /** @param array<string, string> $args */
     public function delete(Request $request, Response $response, array $args): Response
     {
-        $id = $args['id'] ?? null;
-
-        $this->findUser($request, $id);
-
-        $this->policy->assertCanDelete($request, (int) $id);
-
-        $delete = $this->sql
-            ->delete('users')
-            ->where(compact('id'));
-
-        $this->sql
-            ->prepareStatementForSqlObject($delete)
-            ->execute();
+        $this->users->delete((int) $args['id']);
 
         return JsonResponse::write($response, status: 204);
-    }
-
-    private function assignDefaultRole(int $user_id): void
-    {
-        $select = $this->sql
-            ->select('roles')
-            ->columns(['id'])
-            ->where(['name' => 'user'])
-            ->limit(1);
-
-        $role = $this->sql
-            ->prepareStatementForSqlObject($select)
-            ->execute()
-            ->current();
-
-        if ($role === false) {
-            throw new RuntimeException('The default user role is not configured.');
-        }
-
-        $insert = $this->sql
-            ->insert('role_user')
-            ->values([
-                'role_id' => $role['id'],
-                'user_id' => $user_id,
-            ]);
-
-        $this->sql
-            ->prepareStatementForSqlObject($insert)
-            ->execute();
-    }
-
-    /** @return array<string, mixed> */
-    private function findUser(Request $request, int|string|null $id): array
-    {
-        $select = (clone $this->getBaseSelect())
-            ->where(compact('id'));
-
-        $results = $this->sql
-            ->prepareStatementForSqlObject($select)
-            ->execute();
-
-        if ($results->count() === 0) {
-            throw new HttpNotFoundException($request);
-        }
-
-        return $results->current();
-    }
-
-    private function getBaseSelect(): Select
-    {
-        return $this->baseSelect ??= $this->sql
-            ->select('users')
-            ->columns([
-                'id',
-                'email',
-                'first_name',
-                'last_name',
-                'email_verified_at',
-                'password_changed_at',
-            ]);
     }
 }
