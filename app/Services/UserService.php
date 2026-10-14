@@ -43,7 +43,7 @@ class UserService
 
     /**
      * @param array<string, string> $data
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     public function create(array $data): array
     {
@@ -55,8 +55,6 @@ class UserService
         $user = null;
 
         $connection = $this->db->getDriver()->getConnection();
-        $transaction = $connection->beginTransaction();
-
         $connection->beginTransaction();
 
         try {
@@ -122,7 +120,7 @@ class UserService
         return $this->getRepository()->delete(compact('id'));
     }
 
-    /** @return array<string, string> */
+    /** @return array<string, mixed> */
     public function findOne(int $id): array
     {
         $user = $this->getRepository()->findOne($id);
