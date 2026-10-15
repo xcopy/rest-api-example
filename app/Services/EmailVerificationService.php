@@ -8,12 +8,12 @@ use App\Concerns\HasFactory;
 use App\Exceptions\BadRequestException;
 use App\Exceptions\ConflictException;
 use App\Exceptions\NotFoundException;
+use App\Repositories\EmailVerificationTokenRepository;
 use App\Repositories\UserRepository;
 use App\Services\Concerns\ValidatesData;
 use App\Validators\EmailVerificationValidator;
 use DI\Attribute\Inject;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\Sql\Sql;
 use Slim\Interfaces\RouteParserInterface;
 use Throwable;
 
@@ -26,10 +26,10 @@ class EmailVerificationService
     private Adapter $db;
 
     #[Inject]
-    private Sql $sql;
+    private EmailService $email;
 
     #[Inject]
-    private EmailService $email;
+    private EmailVerificationTokenRepository $repository;
 
     #[Inject]
     private UserRepository $userRepository;
@@ -65,25 +65,14 @@ class EmailVerificationService
         $connection->beginTransaction();
 
         try {
-            $revokeEmailVerificationTokens = $this->sql
-                ->delete('email_verification_tokens')
-                ->where(['user_id' => $userId]);
+            $this->repository->delete(['user_id' => $userId]);
 
-            $this->sql
-                ->prepareStatementForSqlObject($revokeEmailVerificationTokens)
-                ->execute();
-
-            $insert = $this->sql
-                ->insert('email_verification_tokens')
-                ->values([
+            $this->repository
+                ->insert([
                     'user_id' => $userId,
                     'token_hash' => hashToken($token),
                     'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
                 ]);
-
-            $this->sql
-                ->prepareStatementForSqlObject($insert)
-                ->execute();
 
             $connection->commit();
         } catch (Throwable $e) {
@@ -123,30 +112,15 @@ class EmailVerificationService
         $connection->beginTransaction();
 
         try {
-            $select = $this->sql
-                ->select('email_verification_tokens')
-                ->columns(['user_id'])
-                ->where($where)
-                ->limit(1);
+            $verificationToken = $this->repository->findOne($where);
 
-            $verificationToken = $this->sql
-                ->prepareStatementForSqlObject($select)
-                ->execute()
-                ->current();
-
-            if ($verificationToken === false) {
+            if ($verificationToken === null) {
                 throw new BadRequestException('The verification token is invalid or expired');
             }
 
-            $consume = $this->sql
-                ->delete('email_verification_tokens')
-                ->where($where);
+            $consumed = $this->repository->delete($where);
 
-            $consumed = $this->sql
-                ->prepareStatementForSqlObject($consume)
-                ->execute();
-
-            if ($consumed->getAffectedRows() !== 1) {
+            if ($consumed !== 1) {
                 $connection->rollback();
                 return false;
             }

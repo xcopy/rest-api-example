@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\JsonResponse;
+use App\Repositories\AccessTokenRepository;
 use App\Services\AuthService;
 use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -15,6 +16,9 @@ class AuthController extends Controller
 {
     #[Inject]
     private AuthService $auth;
+
+    #[Inject]
+    private AccessTokenRepository $accessTokenRepository;
 
     public function login(Request $request, Response $response): Response
     {
@@ -27,17 +31,12 @@ class AuthController extends Controller
         $token = generateToken();
         $expiresAt = now()->modify(config('auth.access_token_ttl'));
 
-        $insert = $this->sql
-            ->insert('access_tokens')
-            ->values([
+        $this->accessTokenRepository
+            ->insert([
                 'user_id' => $user['id'],
                 'token_hash' => hashToken($token),
                 'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
             ]);
-
-        $this->sql
-            ->prepareStatementForSqlObject($insert)
-            ->execute();
 
         return JsonResponse::write($response, [
             'access_token' => $token,
@@ -47,26 +46,16 @@ class AuthController extends Controller
 
     public function logout(Request $request, Response $response): Response
     {
-        $sql = $this->sql
-            ->delete('access_tokens')
-            ->where(['token_hash' => $request->getAttribute('token_hash')]);
-
-        $this->sql
-            ->prepareStatementForSqlObject($sql)
-            ->execute();
+        $this->accessTokenRepository
+            ->delete(['token_hash' => $request->getAttribute('token_hash')]);
 
         return JsonResponse::write($response, status: 204);
     }
 
     public function logoutAll(Request $request, Response $response): Response
     {
-        $sql = $this->sql
-            ->delete('access_tokens')
-            ->where(['user_id' => $request->getAttribute('user_id')]);
-
-        $this->sql
-            ->prepareStatementForSqlObject($sql)
-            ->execute();
+        $sql = $this->accessTokenRepository
+            ->delete(['user_id' => $request->getAttribute('user_id')]);
 
         return JsonResponse::write($response, status: 204);
     }

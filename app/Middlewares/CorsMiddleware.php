@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Middlewares;
 
-use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;

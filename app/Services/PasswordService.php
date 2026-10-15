@@ -7,6 +7,8 @@ namespace App\Services;
 use App\Concerns\HasFactory;
 use App\Exceptions\BadRequestException;
 use App\Exceptions\NotFoundException;
+use App\Repositories\AccessTokenRepository;
+use App\Repositories\PasswordResetTokenRepository;
 use App\Repositories\UserRepository;
 use App\Services\Concerns\ValidatesData;
 use App\Validators\PasswordValidator;
@@ -14,7 +16,6 @@ use DateInterval;
 use DateTimeImmutable;
 use DI\Attribute\Inject;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\Sql\Sql;
 use Slim\Interfaces\RouteParserInterface;
 use Throwable;
 
@@ -27,10 +28,13 @@ class PasswordService
     private Adapter $db;
 
     #[Inject]
-    private Sql $sql;
+    private EmailService $email;
 
     #[Inject]
-    private EmailService $email;
+    private PasswordResetTokenRepository $repository;
+
+    #[Inject]
+    private AccessTokenRepository $accessTokenRepository;
 
     #[Inject]
     private UserRepository $userRepository;
@@ -63,25 +67,15 @@ class PasswordService
         $connection->beginTransaction();
 
         try {
-            $delete = $this->sql
-                ->delete('password_reset_tokens')
-                ->where(['user_id' => $user['id']]);
+            $this->repository
+                ->delete(['user_id' => $user['id']]);
 
-            $this->sql
-                ->prepareStatementForSqlObject($delete)
-                ->execute();
-
-            $insert = $this->sql
-                ->insert('password_reset_tokens')
-                ->values([
+            $this->repository
+                ->insert([
                     'user_id' => $user['id'],
                     'token_hash' => hashToken($token),
                     'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
                 ]);
-
-            $this->sql
-                ->prepareStatementForSqlObject($insert)
-                ->execute();
 
             $connection->commit();
         } catch (Throwable $e) {
@@ -118,18 +112,9 @@ class PasswordService
             'expires_at > ?' => now(true),
         ];
 
-        $select = $this->sql
-            ->select('password_reset_tokens')
-            ->columns(['user_id'])
-            ->where($where)
-            ->limit(1);
+        $resetToken = $this->repository->findOne($where);
 
-        $resetToken = $this->sql
-            ->prepareStatementForSqlObject($select)
-            ->execute()
-            ->current();
-
-        if ($resetToken === false) {
+        if ($resetToken === null) {
             throw new BadRequestException('The password reset token is invalid or expired');
         }
 
@@ -137,15 +122,9 @@ class PasswordService
         $connection->beginTransaction();
 
         try {
-            $consume = $this->sql
-                ->delete('password_reset_tokens')
-                ->where($where);
+            $consumed = $this->repository->delete($where);
 
-            $consumed = $this->sql
-                ->prepareStatementForSqlObject($consume)
-                ->execute();
-
-            if ($consumed->getAffectedRows() !== 1) {
+            if ($consumed !== 1) {
                 $connection->rollback();
                 return false;
             }
@@ -236,13 +215,7 @@ class PasswordService
             return false;
         }
 
-        $revokeTokens = $this->sql
-            ->delete('access_tokens')
-            ->where(['user_id' => $userId]);
-
-        $this->sql
-            ->prepareStatementForSqlObject($revokeTokens)
-            ->execute();
+        $this->accessTokenRepository->delete(['user_id' => $userId]);
 
         return true;
     }

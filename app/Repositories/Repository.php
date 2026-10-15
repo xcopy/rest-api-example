@@ -19,7 +19,10 @@ abstract class Repository
     abstract protected function getTable(): string;
 
     /** @return array<string> */
-    abstract protected function getColumns(): array;
+    protected function getColumns(): array
+    {
+        return ['*'];
+    }
 
     /** @param list<string> $columns */
     public function addColumns(array $columns): static
