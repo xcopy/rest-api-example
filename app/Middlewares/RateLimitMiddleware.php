@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Middlewares;
 
 use App\Handlers\ErrorHandler;
-use App\Services\ConfigService;
 use DI\Attribute\Inject;
 use Predis\ClientInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -20,9 +19,6 @@ class RateLimitMiddleware implements MiddlewareInterface
     #[Inject]
     private ClientInterface $redis;
 
-    #[Inject]
-    private ConfigService $config;
-
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $remoteAddress = $request->getServerParams()['REMOTE_ADDR'] ?? null;
@@ -32,7 +28,7 @@ class RateLimitMiddleware implements MiddlewareInterface
             throw new RuntimeException('A valid client IP address is required for rate limiting.');
         }
 
-        $config = $this->config->get('rate-limit');
+        $config = config('rate-limit');
 
         $now = now()->getTimestamp();
         $windowStart = intdiv($now, $config['window']) * $config['window'];

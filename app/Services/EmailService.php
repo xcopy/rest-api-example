@@ -14,16 +14,13 @@ class EmailService
     #[Inject]
     private MailerInterface $mailer;
 
-    #[Inject]
-    private ConfigService $config;
-
     public function compose(): Email
     {
         $message = new Email();
         $message->from(
             new Address(
-                address: $this->config->get('mail.from_address'),
-                name: $this->config->get('mail.from_name')
+                address: config('mail.from_address'),
+                name: config('mail.from_name')
             )
         );
 

@@ -25,7 +25,7 @@ class AuthController extends Controller
         }
 
         $token = generateToken();
-        $expiresAt = now()->modify($this->config->get('auth.access_token_ttl'));
+        $expiresAt = now()->modify(config('auth.access_token_ttl'));
 
         $insert = $this->sql
             ->insert('user_tokens')

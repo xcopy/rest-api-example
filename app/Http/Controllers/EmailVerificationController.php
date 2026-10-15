@@ -21,7 +21,7 @@ class EmailVerificationController extends Controller
 
         $this->emailVerification->send($email, $token);
 
-        $data = $this->config->get('app.env') === 'local' ? compact('token') : null;
+        $data = config('app.env') === 'local' ? compact('token') : null;
 
         return JsonResponse::write($response, $data, 202);
     }

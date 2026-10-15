@@ -29,9 +29,6 @@ class EmailVerificationService
     private Sql $sql;
 
     #[Inject]
-    private ConfigService $config;
-
-    #[Inject]
     private EmailService $email;
 
     #[Inject]
@@ -62,7 +59,7 @@ class EmailVerificationService
         $user_id = $user['id'];
         $email = $user['email'];
         $token = generateToken();
-        $expiresAt = now()->modify($this->config->get('email-verification.ttl'));
+        $expiresAt = now()->modify(config('email-verification.ttl'));
 
         $connection = $this->db->getDriver()->getConnection();
         $connection->beginTransaction();
@@ -94,7 +91,7 @@ class EmailVerificationService
             throw $e;
         }
 
-        $url = rtrim($this->config->get('app.base_url'), '/') . $this->routeParser->urlFor('email-verification.verify');
+        $url = rtrim(config('app.base_url'), '/') . $this->routeParser->urlFor('email-verification.verify');
 
         $message = $this->email
             ->compose()

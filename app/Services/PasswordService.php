@@ -30,9 +30,6 @@ class PasswordService
     private Sql $sql;
 
     #[Inject]
-    private ConfigService $config;
-
-    #[Inject]
     private EmailService $email;
 
     #[Inject]
@@ -60,7 +57,7 @@ class PasswordService
         }
 
         $token = generateToken();
-        $expiresAt = now()->modify($this->config->get('password.reset_ttl'));
+        $expiresAt = now()->modify(config('password.reset_ttl'));
 
         $connection = $this->db->getDriver()->getConnection();
         $connection->beginTransaction();
@@ -92,7 +89,7 @@ class PasswordService
             throw $e;
         }
 
-        $url = rtrim($this->config->get('app.base_url'), '/') . $this->routeParser->urlFor('password.reset');
+        $url = rtrim(config('app.base_url'), '/') . $this->routeParser->urlFor('password.reset');
 
         $message = $this->email
             ->compose()

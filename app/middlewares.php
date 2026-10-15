@@ -12,7 +12,6 @@ use App\Http\JsonResponse;
 use App\Middlewares\CorsMiddleware;
 use App\Middlewares\RateLimitMiddleware;
 use App\Middlewares\TrimInputMiddleware;
-use App\Services\ConfigService;
 use Middlewares\TrailingSlash;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
@@ -30,13 +29,7 @@ return function (App $app) {
     $app->add(TrailingSlash::class);
     $app->add(RateLimitMiddleware::class);
 
-    $config = $app->getContainer()?->get(ConfigService::class);
-
-    if (!$config instanceof ConfigService) {
-        throw new RuntimeException('The configuration service is not available.');
-    }
-
-    $isProduction = $config->get('app.env') === 'production';
+    $isProduction = config('app.env') === 'production';
 
     $stream = new RotatingFileHandler(
         APP_BASE_PATH . '/logs/app.log',

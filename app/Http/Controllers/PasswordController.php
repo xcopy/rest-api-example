@@ -28,7 +28,7 @@ class PasswordController extends Controller
     {
         $this->password->sendReset($request->getParsedBody() ?? [], $token);
 
-        $data = $this->config->get('app.env') === 'local' ? compact('token') : null;
+        $data = config('app.env') === 'local' ? compact('token') : null;
 
         return JsonResponse::write($response, $data, 202);
     }
