@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Pdo\Mysql;
+use PDO;
 
 $sqlite = fn(string $env) => [
     'driver' => 'Pdo_Sqlite',
@@ -21,7 +21,7 @@ return [
         'password' => getenv('MYSQL_PASSWORD') ?: '',
         'charset' => getenv('MYSQL_CHARSET') ?: 'utf8mb4',
         'driver_options' => [
-            Mysql::ATTR_FOUND_ROWS => true,
+            PDO::MYSQL_ATTR_FOUND_ROWS => true,
         ],
     ],
 ];
