@@ -100,7 +100,7 @@ class PasswordService
             ->subject('Reset your password')
             ->text(sprintf(
                 "Hello,\n\nTo reset your password, send a POST request to:\n%s\n\n"
-                    . "with this JSON body:\n{\"token\":\"%s\",\"newPassword\":\"<new password>\","
+                    . "with this JSON body:\n{\"token\":\"%s\",\"new_password\":\"<new password>\","
                     . "\"new_password_repeat\":\"<new password>\"}\n\n"
                     . "This token expires at %s.\n",
                 $url,
@@ -192,12 +192,24 @@ class PasswordService
 
         $passwordChangedAt = $user['password_changed_at'];
         $cooldownCutoff = now()->sub(new DateInterval('PT24H'));
+        $cooldownException = new BadRequestException('Password can only be changed once every 24 hours');
 
-        if (
-            ($passwordChangedAt !== null && parseDateTime($passwordChangedAt) > $cooldownCutoff)
-            || !$this->updatePassword($userId, $newPassword, $cooldownCutoff)
-        ) {
-            throw new BadRequestException('Password can only be changed once every 24 hours');
+        if ($passwordChangedAt !== null && parseDateTime($passwordChangedAt) > $cooldownCutoff) {
+            throw $cooldownException;
+        }
+
+        $connection = $this->db->getDriver()->getConnection();
+        $connection->beginTransaction();
+
+        try {
+            if (!$this->updatePassword($userId, $newPassword, $cooldownCutoff)) {
+                throw $cooldownException;
+            }
+
+            $connection->commit();
+        } catch (Throwable $e) {
+            $connection->rollback();
+            throw $e;
         }
     }
 
@@ -213,39 +225,28 @@ class PasswordService
             $where['(password_changed_at IS NULL OR password_changed_at <= ?)'] = $changedBefore->format(DATE_FORMAT_DB);
         }
 
-        $connection = $this->db->getDriver()->getConnection();
-        $connection->beginTransaction();
+        $result = $this->userRepository
+            ->update(
+                [
+                    'password' => hashPassword($password),
+                    'password_changed_at' => $now,
+                    'updated_at' => $now,
+                ],
+                $where
+            );
 
-        try {
-            $result = $this->userRepository
-                ->update(
-                    [
-                        'password' => hashPassword($password),
-                        'password_changed_at' => $now,
-                        'updated_at' => $now,
-                    ],
-                    $where
-                );
-
-            if ($result !== 1) {
-                $connection->rollback();
-                return false;
-            }
-
-            $revokeTokens = $this->sql
-                ->delete('user_tokens')
-                ->where(['user_id' => $userId]);
-
-            $this->sql
-                ->prepareStatementForSqlObject($revokeTokens)
-                ->execute();
-
-            $connection->commit();
-
-            return true;
-        } catch (Throwable $e) {
-            $connection->rollback();
-            throw $e;
+        if ($result !== 1) {
+            return false;
         }
+
+        $revokeTokens = $this->sql
+            ->delete('user_tokens')
+            ->where(['user_id' => $userId]);
+
+        $this->sql
+            ->prepareStatementForSqlObject($revokeTokens)
+            ->execute();
+
+        return true;
     }
 }
