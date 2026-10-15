@@ -39,6 +39,11 @@
             "app/helpers.php"
         ]
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "config": {
         "allow-plugins": {
             "ergebnis/composer-normalize": true,
@@ -50,7 +55,6 @@
         "sort-packages": true
     },
     "scripts": {
-        "post-update-cmd": "@composer normalize",
         "analyse": [
             "vendor/bin/phpstan analyse --error-format=table --no-progress"
         ],
