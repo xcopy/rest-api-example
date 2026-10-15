@@ -5,36 +5,22 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\JsonResponse;
-use App\Validators\AuthValidator;
+use App\Services\AuthService;
+use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpUnauthorizedException;
 
-class AuthController extends ValidatingController
+class AuthController extends Controller
 {
-    protected function getValidatorClass(): string
-    {
-        return AuthValidator::class;
-    }
+    #[Inject]
+    protected AuthService $auth;
 
     public function login(Request $request, Response $response): Response
     {
-        // body: email, password
-        $data = $this->validateRequest($request);
+        $user = $this->auth->login($request->getParsedBody() ?? []);
 
-        $select = $this->sql
-            ->select('users')
-            ->where(['email' => $data['email']])
-            ->limit(1);
-
-        $user = $this->sql
-            ->prepareStatementForSqlObject($select)
-            ->execute()
-            ->current();
-
-        $successfull = $user && checkPassword($data['password'], $user['password']);
-
-        if (!$successfull) {
+        if ($user === null) {
             throw new HttpUnauthorizedException($request, 'Invalid email or password.');
         }
 
