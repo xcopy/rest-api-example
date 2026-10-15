@@ -117,7 +117,7 @@ final class EmailVerificationService
                     'email_verified_at' => $now,
                     'updated_at' => $now,
                 ],
-                ['id' => (int) $verificationToken['user_id']]
+                ['id' => $verificationToken['user_id']]
             );
 
             if ($result !== 1) {

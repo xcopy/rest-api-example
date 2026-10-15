@@ -12,13 +12,13 @@ if (!function_exists('config')) {
             $files = glob(APP_BASE_PATH . '/config/*.php');
 
             if ($files === false) {
-                throw new RuntimeException('Unable to load configuration files.');
+                throw new RuntimeException('Unable to load configuration files');
             }
 
             foreach ($files as $file) {
                 $value = require $file;
                 if (!is_array($value)) {
-                    throw new RuntimeException(sprintf('Configuration file "%s" must return an array.', $file));
+                    throw new RuntimeException(sprintf('Configuration file "%s" must return an array', $file));
                 }
 
                 $values[basename($file, '.php')] = $value;
@@ -84,7 +84,7 @@ if (!function_exists('checkPassword')) {
     function checkPassword(string $password, string $hash): bool
     {
         if ($password === '' || $hash === '') {
-            throw new InvalidArgumentException('Password or/and hash cannot be empty.');
+            throw new InvalidArgumentException('Password or/and hash cannot be empty');
         }
 
         return password_verify($password, $hash);

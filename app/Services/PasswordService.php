@@ -116,7 +116,7 @@ final class PasswordService
                 throw new BadRequestException('The password reset token is invalid or expired');
             }
 
-            if (!$this->updatePassword((int) $resetToken['user_id'], $data['new_password'])) {
+            if (!$this->updatePassword($resetToken['user_id'], $data['new_password'])) {
                 throw new NotFoundException('User with this password reset token not found');
             }
 
@@ -127,7 +127,9 @@ final class PasswordService
     /** @param array<string, mixed> $data */
     public function change(int $userId, array $data): void
     {
-        $user = $this->userRepository->findOne($userId);
+        $user = $this->userRepository
+            ->addColumns(['password'])
+            ->findOne($userId);
 
         if ($user === null) {
             throw new NotFoundException();

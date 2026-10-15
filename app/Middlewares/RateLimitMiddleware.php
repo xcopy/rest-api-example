@@ -25,7 +25,7 @@ final class RateLimitMiddleware implements MiddlewareInterface
         $packedAddress = is_string($remoteAddress) ? inet_pton($remoteAddress) : false;
 
         if ($packedAddress === false) {
-            throw new RuntimeException('A valid client IP address is required for rate limiting.');
+            throw new RuntimeException('A valid client IP address is required for rate limiting');
         }
 
         $config = config('rate-limit');
@@ -59,7 +59,7 @@ LUA,
         );
 
         if (!is_int($requestCount)) {
-            throw new RuntimeException('Unable to update the API rate limit counter in Redis.');
+            throw new RuntimeException('Unable to update the API rate limit counter in Redis');
         }
 
         $blocked = $requestCount === -1;

@@ -18,19 +18,19 @@ final class FileTransport extends AbstractTransport
     protected function doSend(SentMessage $message): void
     {
         if (!is_dir($this->directory) && !mkdir($this->directory, 0775, true) && !is_dir($this->directory)) {
-            throw new RuntimeException(sprintf('Unable to create mail directory "%s".', $this->directory));
+            throw new RuntimeException(sprintf('Unable to create mail directory "%s"', $this->directory));
         }
 
         $filename = sprintf(
             '%s-%s.eml',
-            now()->format('YmdHis'),
+            now()->format('Y.m.d-H:i:s'),
             generateToken(8)
         );
 
         $path = $this->directory . '/' . $filename;
 
         if (file_put_contents($path, $message->toString(), LOCK_EX) === false) {
-            throw new RuntimeException(sprintf('Unable to write email to "%s".', $path));
+            throw new RuntimeException(sprintf('Unable to write email to "%s"', $path));
         }
     }
 

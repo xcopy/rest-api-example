@@ -50,7 +50,7 @@ final class UserService
             }
 
             if ($user === null) {
-                throw new RuntimeException('The newly created user could not be loaded.');
+                throw new RuntimeException('The newly created user could not be loaded');
             }
 
             $select = $this->sql
@@ -65,7 +65,7 @@ final class UserService
                 ->current();
 
             if ($role === false) {
-                throw new RuntimeException('The default user role is not configured.');
+                throw new RuntimeException('The default user role is not configured');
             }
 
             $insert = $this->sql

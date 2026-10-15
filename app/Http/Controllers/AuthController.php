@@ -42,7 +42,7 @@ final class AuthController extends Controller
         $user = $this->auth->login($request->getParsedBody() ?? []);
 
         if ($user === null) {
-            throw new HttpUnauthorizedException($request, 'Invalid email or password.');
+            throw new HttpUnauthorizedException($request, 'Invalid email or password');
         }
 
         $token = generateToken();

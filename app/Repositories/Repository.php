@@ -72,7 +72,7 @@ abstract class Repository
     public function findOne(int|array $where): ?array
     {
         if ($where === []) {
-            throw new RuntimeException('A where condition is required to find a repository record.');
+            throw new RuntimeException('A where condition is required to find a repository record');
         }
 
         if (is_int($where)) {
@@ -114,7 +114,7 @@ abstract class Repository
     public function update(array $data, array $where): int
     {
         if ($where === []) {
-            throw new RuntimeException('A where condition is required to update repository records.');
+            throw new RuntimeException('A where condition is required to update repository records');
         }
 
         $update = $this->sql
@@ -132,7 +132,7 @@ abstract class Repository
     public function delete(array $where): int
     {
         if ($where === []) {
-            throw new RuntimeException('A where condition is required to delete repository records.');
+            throw new RuntimeException('A where condition is required to delete repository records');
         }
 
         $delete = $this->sql
