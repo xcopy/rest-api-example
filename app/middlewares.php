@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Error\Renderers\JsonErrorRenderer;
 use App\Exceptions\BadRequestException;
 use App\Exceptions\ConflictException;
 use App\Exceptions\NotFoundException;
@@ -58,7 +57,6 @@ return function (App $app) {
         $logger
     );
     $errorHandler->forceContentType('application/json');
-    $errorHandler->registerErrorRenderer('application/json', JsonErrorRenderer::class);
 
     $errorMiddleware = $app->addErrorMiddleware(
         displayErrorDetails: !$isProduction,
