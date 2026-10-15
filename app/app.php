@@ -4,18 +4,10 @@ declare(strict_types=1);
 
 require __DIR__ . '/bootstrap.php';
 
-use DI\ContainerBuilder;
 use Slim\Factory\AppFactory;
 use Slim\Interfaces\RouteParserInterface;
 
-$definitions = require __DIR__ . '/definitions.php';
-$middlewares = require __DIR__ . '/middlewares.php';
-$routes = require __DIR__ . '/routes.php';
-
-$containerBuilder = new ContainerBuilder();
-$containerBuilder->useAttributes(true);
-$containerBuilder->addDefinitions($definitions);
-$container = $containerBuilder->build();
+$container = require __DIR__ . '/container.php';
 
 AppFactory::setContainer($container);
 
@@ -26,7 +18,10 @@ $container->set(
     $app->getRouteCollector()->getRouteParser()
 );
 
+$routes = require __DIR__ . '/routes.php';
 $routes($app);
+
+$middlewares = require __DIR__ . '/middlewares.php';
 $middlewares($app);
 
 return $app;

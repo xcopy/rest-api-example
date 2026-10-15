@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Db\Adapter;
 use App\Mailer\FileTransport;
+use DI\ContainerBuilder;
 use Laminas\Db\Adapter\Adapter as BaseAdapter;
 use Laminas\Db\Sql\Sql;
 use Predis\Client;
@@ -12,7 +13,7 @@ use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mailer\Transport;
 
-return [
+$definitions = [
     MailerInterface::class => function () {
         $transport = in_array(config('app.env'), ['local', 'testing'])
             ? new FileTransport(APP_BASE_PATH . '/logs/mail')
@@ -58,3 +59,9 @@ return [
         ]);
     },
 ];
+
+$containerBuilder = new ContainerBuilder();
+$containerBuilder->useAttributes(true);
+$containerBuilder->addDefinitions($definitions);
+
+return $containerBuilder->build();
