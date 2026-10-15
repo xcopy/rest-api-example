@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Concerns\HasFactory;
+use App\Db\Adapter;
 use App\Exceptions\NotFoundException;
 use App\Repositories\UserRepository;
 use App\Services\Concerns\ValidatesData;
 use App\Validators\UserValidator;
 use DI\Attribute\Inject;
-use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
 use RuntimeException;
-use Throwable;
 
 final class UserService
 {
@@ -43,12 +42,9 @@ final class UserService
         $data = $this->validate($data, 'create');
         $data['password'] = hashPassword($data['password']);
 
-        $user = null;
+        return $this->db->transaction(function () use ($data) {
+            $user = null;
 
-        $connection = $this->db->getDriver()->getConnection();
-        $connection->beginTransaction();
-
-        try {
             if ($userId = $this->repository->insert($data)) {
                 $user = $this->repository->findOne($userId);
             }
@@ -83,13 +79,8 @@ final class UserService
                 ->prepareStatementForSqlObject($insert)
                 ->execute();
 
-            $connection->commit();
-        } catch (Throwable $e) {
-            $connection->rollback();
-            throw $e;
-        }
-
-        return $user;
+            return $user;
+        });
     }
 
     /** @param array<string, string> $data */

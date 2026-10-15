@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Db\Adapter;
 use App\Mailer\FileTransport;
-use Laminas\Db\Adapter\Adapter;
+use Laminas\Db\Adapter\Adapter as BaseAdapter;
 use Laminas\Db\Sql\Sql;
 use Predis\Client;
 use Predis\ClientInterface;
@@ -29,9 +30,8 @@ return [
 
         return $adapter;
     },
-    Sql::class => function (Adapter $db) {
-        return new Sql($db);
-    },
+    BaseAdapter::class => \DI\get(Adapter::class),
+    Sql::class => fn(Adapter $db) => new Sql($db),
     ClientInterface::class => function () {
         $config = config('redis');
         $parameters = [

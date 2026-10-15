@@ -7,8 +7,9 @@ namespace App\Handlers;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpException;
+use Slim\Handlers\ErrorHandler as BaseErrorHandler;
 
-final class ErrorHandler extends \Slim\Handlers\ErrorHandler
+final class ErrorHandler extends BaseErrorHandler
 {
     private const ATTRIBUTE = 'exception_headers';
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Concerns\HasFactory;
+use App\Db\Adapter;
 use App\Exceptions\BadRequestException;
 use App\Exceptions\NotFoundException;
 use App\Repositories\AccessTokenRepository;
@@ -15,9 +16,7 @@ use App\Validators\PasswordValidator;
 use DateInterval;
 use DateTimeImmutable;
 use DI\Attribute\Inject;
-use Laminas\Db\Adapter\Adapter;
 use Slim\Interfaces\RouteParserInterface;
-use Throwable;
 
 final class PasswordService
 {
@@ -47,7 +46,10 @@ final class PasswordService
         return PasswordValidator::class;
     }
 
-    /** @param array<string, mixed> $data */
+    /**
+     * @param array<string, mixed> $data
+     * @param-out string $token
+     */
     public function sendReset(array $data, ?string &$token = null): void
     {
         $data = $this->validate($data, 'forgot');
@@ -63,25 +65,14 @@ final class PasswordService
         $token = generateToken();
         $expiresAt = now()->modify(config('password.reset_ttl'));
 
-        $connection = $this->db->getDriver()->getConnection();
-        $connection->beginTransaction();
-
-        try {
-            $this->repository
-                ->delete(['user_id' => $user['id']]);
-
-            $this->repository
-                ->insert([
-                    'user_id' => $user['id'],
-                    'token_hash' => hashToken($token),
-                    'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
-                ]);
-
-            $connection->commit();
-        } catch (Throwable $e) {
-            $connection->rollback();
-            throw $e;
-        }
+        $this->db->transaction(function () use ($user, $token, $expiresAt) {
+            $this->repository->delete(['user_id' => $user['id']]);
+            $this->repository->insert([
+                'user_id' => $user['id'],
+                'token_hash' => hashToken($token),
+                'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
+            ]);
+        });
 
         $url = rtrim(config('app.base_url'), '/') . $this->routeParser->urlFor('password.reset');
 
@@ -118,29 +109,19 @@ final class PasswordService
             throw new BadRequestException('The password reset token is invalid or expired');
         }
 
-        $connection = $this->db->getDriver()->getConnection();
-        $connection->beginTransaction();
-
-        try {
+        return $this->db->transaction(function () use ($data, $where, $resetToken) {
             $consumed = $this->repository->delete($where);
 
             if ($consumed !== 1) {
-                $connection->rollback();
-                return false;
+                throw new BadRequestException('The password reset token is invalid or expired');
             }
 
             if (!$this->updatePassword((int) $resetToken['user_id'], $data['new_password'])) {
-                $connection->rollback();
-                return false;
+                throw new NotFoundException('User with this password reset token not found');
             }
 
-            $connection->commit();
-
             return true;
-        } catch (Throwable $e) {
-            $connection->rollback();
-            throw $e;
-        }
+        });
     }
 
     /** @param array<string, mixed> $data */
@@ -174,18 +155,12 @@ final class PasswordService
             throw $cooldownException;
         }
 
-        $connection = $this->db->getDriver()->getConnection();
-        $connection->beginTransaction();
+        $updated = $this->db->transaction(function () use ($userId, $newPassword, $cooldownCutoff) {
+            return $this->updatePassword($userId, $newPassword, $cooldownCutoff);
+        });
 
-        try {
-            if (!$this->updatePassword($userId, $newPassword, $cooldownCutoff)) {
-                throw $cooldownException;
-            }
-
-            $connection->commit();
-        } catch (Throwable $e) {
-            $connection->rollback();
-            throw $e;
+        if (!$updated) {
+            throw new $cooldownException();
         }
     }
 

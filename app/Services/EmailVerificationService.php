@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Concerns\HasFactory;
+use App\Db\Adapter;
 use App\Exceptions\BadRequestException;
 use App\Exceptions\ConflictException;
 use App\Exceptions\NotFoundException;
@@ -13,9 +14,7 @@ use App\Repositories\UserRepository;
 use App\Services\Concerns\ValidatesData;
 use App\Validators\EmailVerificationValidator;
 use DI\Attribute\Inject;
-use Laminas\Db\Adapter\Adapter;
 use Slim\Interfaces\RouteParserInterface;
-use Throwable;
 
 final class EmailVerificationService
 {
@@ -42,6 +41,7 @@ final class EmailVerificationService
         return EmailVerificationValidator::class;
     }
 
+    /** @param-out string $token */
     public function send(string $email, ?string &$token = null): void
     {
         $data = $this->validate(compact('email'), 'send');
@@ -61,24 +61,14 @@ final class EmailVerificationService
         $token = generateToken();
         $expiresAt = now()->modify(config('email-verification.ttl'));
 
-        $connection = $this->db->getDriver()->getConnection();
-        $connection->beginTransaction();
-
-        try {
+        $this->db->transaction(function () use ($token, $userId, $expiresAt) {
             $this->repository->delete(['user_id' => $userId]);
-
-            $this->repository
-                ->insert([
-                    'user_id' => $userId,
-                    'token_hash' => hashToken($token),
-                    'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
-                ]);
-
-            $connection->commit();
-        } catch (Throwable $e) {
-            $connection->rollback();
-            throw $e;
-        }
+            $this->repository->insert([
+                'user_id' => $userId,
+                'token_hash' => hashToken($token),
+                'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
+            ]);
+        });
 
         $url = rtrim(config('app.base_url'), '/') . $this->routeParser->urlFor('email-verification.verify');
 
@@ -108,43 +98,33 @@ final class EmailVerificationService
             'expires_at > ?' => $now,
         ];
 
-        $connection = $this->db->getDriver()->getConnection();
-        $connection->beginTransaction();
-
-        try {
+        return $this->db->transaction(function () use ($now, $where) {
             $verificationToken = $this->repository->findOne($where);
+            $invalidException = new BadRequestException('The verification token is invalid or expired');
 
             if ($verificationToken === null) {
-                throw new BadRequestException('The verification token is invalid or expired');
+                throw $invalidException;
             }
 
             $consumed = $this->repository->delete($where);
 
             if ($consumed !== 1) {
-                $connection->rollback();
-                return false;
+                throw $invalidException;
             }
 
-            $result = $this->userRepository
-                ->update(
-                    [
-                        'email_verified_at' => $now,
-                        'updated_at' => $now,
-                    ],
-                    ['id' => (int) $verificationToken['user_id']]
-                );
+            $result = $this->userRepository->update(
+                [
+                    'email_verified_at' => $now,
+                    'updated_at' => $now,
+                ],
+                ['id' => (int) $verificationToken['user_id']]
+            );
 
             if ($result !== 1) {
-                $connection->rollback();
-                return false;
+                throw new NotFoundException('User with this verification token not found');
             }
 
-            $connection->commit();
-
             return true;
-        } catch (Throwable $e) {
-            $connection->rollback();
-            throw $e;
-        }
+        });
     }
 }
