@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use PDO;
-
 $sqlite = fn(string $env) => [
     'driver' => 'Pdo_Sqlite',
     'database' => dirname(__DIR__) . "/db/db-{$env}.sqlite3",

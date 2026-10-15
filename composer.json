@@ -68,12 +68,16 @@
         "fix": [
             "vendor/bin/php-cs-fixer fix"
         ],
-        "test": "vendor/bin/pest",
+        "test": [
+            "@test:db",
+            "vendor/bin/pest"
+        ],
         "test:db": [
             "@putenv APP_ENV=testing",
             "vendor/bin/phinx rollback -t 0 -c .phinx.php",
             "vendor/bin/phinx migrate -c .phinx.php",
             "vendor/bin/phinx seed:run -c .phinx.php -s RoleSeeder -s PermissionSeeder -s PermissionRoleSeeder"
-        ]
+        ],
+        "test:pest": "vendor/bin/pest"
     }
 }
