@@ -1,0 +1,9 @@
+{
+    "intelephense.files.exclude": [
+        "**/app/PHPStan/**",
+        "**/.git/**",
+        "**/node_modules/**",
+        "**/vendor/**/{Tests,tests}/**",
+        "**/vendor/**/vendor/**"
+    ]
+}

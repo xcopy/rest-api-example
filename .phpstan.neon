@@ -6,3 +6,8 @@ parameters:
         - app
         - config
         - db
+services:
+    -
+        class: App\PHPStan\InjectPropertyExtension
+        tags:
+            - phpstan.properties.readWriteExtension
