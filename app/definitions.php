@@ -40,7 +40,7 @@ return [
             'port' => $config['port'],
             'timeout' => $config['timeout'],
             'read_write_timeout' => $config['timeout'],
-            'database' => $config['databse'],
+            'database' => $config['database'],
         ];
 
         $username = $config['username'];

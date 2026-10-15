@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use Phinx\Migration\AbstractMigration;
 
-final class CreateUserTokensTable extends AbstractMigration
+final class CreateAccessTokensTable extends AbstractMigration
 {
     public function change(): void
     {
-        $this->table('user_tokens')
+        $this->table('access_tokens')
             ->addColumn('user_id', 'integer', ['null' => false, 'signed' => false])
             ->addColumn('token_hash', 'string', ['limit' => 64, 'null' => false])
             ->addColumn('expires_at', 'timestamp', ['null' => false])

@@ -28,12 +28,12 @@ class AuthenticationMiddleware implements MiddlewareInterface
         $tokenHash = hashToken($matches[1]);
 
         $select = $this->sql
-            ->select('user_tokens')
+            ->select('access_tokens')
             ->columns([])
-            ->join('users', 'user_tokens.user_id = users.id', ['id', 'email'])
+            ->join('users', 'access_tokens.user_id = users.id', ['id', 'email'])
             ->where([
-                'user_tokens.token_hash' => $tokenHash,
-                'user_tokens.expires_at > ?' => now(true),
+                'access_tokens.token_hash' => $tokenHash,
+                'access_tokens.expires_at > ?' => now(true),
             ])
             ->limit(1);
 

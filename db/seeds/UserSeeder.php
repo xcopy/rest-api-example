@@ -36,7 +36,7 @@ class UserSeeder extends AbstractSeed
         }
         */
 
-        $this->execute('delete from user_tokens');
+        $this->execute('delete from access_tokens');
         $this->execute('delete from role_user');
         $this->execute('delete from users');
 

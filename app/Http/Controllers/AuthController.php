@@ -28,7 +28,7 @@ class AuthController extends Controller
         $expiresAt = now()->modify(config('auth.access_token_ttl'));
 
         $insert = $this->sql
-            ->insert('user_tokens')
+            ->insert('access_tokens')
             ->values([
                 'user_id' => $user['id'],
                 'token_hash' => hashToken($token),
@@ -48,7 +48,7 @@ class AuthController extends Controller
     public function logout(Request $request, Response $response): Response
     {
         $sql = $this->sql
-            ->delete('user_tokens')
+            ->delete('access_tokens')
             ->where(['token_hash' => $request->getAttribute('token_hash')]);
 
         $this->sql
@@ -61,7 +61,7 @@ class AuthController extends Controller
     public function logoutAll(Request $request, Response $response): Response
     {
         $sql = $this->sql
-            ->delete('user_tokens')
+            ->delete('access_tokens')
             ->where(['user_id' => $request->getAttribute('user_id')]);
 
         $this->sql

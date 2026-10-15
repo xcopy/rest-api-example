@@ -237,7 +237,7 @@ class PasswordService
         }
 
         $revokeTokens = $this->sql
-            ->delete('user_tokens')
+            ->delete('access_tokens')
             ->where(['user_id' => $userId]);
 
         $this->sql
