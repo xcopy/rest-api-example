@@ -21,9 +21,7 @@ final class EmailVerificationController extends Controller
 
         $this->emailVerification->send($email, $token);
 
-        $data = config('app.env') === 'local' ? compact('token') : null;
-
-        return JsonResponse::write($response, $data, 202);
+        return JsonResponse::write($response, status: 202);
     }
 
     public function verify(Request $request, Response $response): Response
