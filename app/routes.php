@@ -68,13 +68,12 @@ return function (App $app) use ($authMiddleware, $lowerFilterMiddleware) {
 
     // users
     $app
-        ->group('/users', function (RouteCollectorProxy $group) {
+        ->group('/user', function (RouteCollectorProxy $group) {
             $controllerClass = UserController::class;
-            $id = '/{id:[0-9]+}';
 
-            $group->get($id, [$controllerClass, 'show']);
-            $group->map(['POST', 'PATCH'], $id, [$controllerClass, 'update']);
-            $group->delete($id, [$controllerClass, 'delete']);
+            $group->get('', [$controllerClass, 'show']);
+            $group->map(['POST', 'PATCH'], '', [$controllerClass, 'update']);
+            $group->delete('', [$controllerClass, 'delete']);
         })
-        ->add(AuthenticationMiddleware::class);
+        ->add($authMiddleware);
 };

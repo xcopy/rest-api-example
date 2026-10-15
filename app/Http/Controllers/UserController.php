@@ -15,27 +15,27 @@ final class UserController extends Controller
     #[Inject]
     private UserService $users;
 
-    /** @param array<string, string> $args */
-    public function show(Request $request, Response $response, array $args): Response
+    public function show(Request $request, Response $response): Response
     {
         return JsonResponse::write(
             $response,
-            $this->users->findOne((int) $args['id'])
+            $this->users->findOne($request->getAttribute('user_id'))
         );
     }
 
-    /** @param array<string, string> $args */
-    public function update(Request $request, Response $response, array $args): Response
+    public function update(Request $request, Response $response): Response
     {
-        $this->users->update((int) $args['id'], $request->getParsedBody() ?? []);
+        $this->users->update(
+            $request->getAttribute('user_id'),
+            $request->getParsedBody() ?? []
+        );
 
         return JsonResponse::write($response, status: 204);
     }
 
-    /** @param array<string, string> $args */
-    public function delete(Request $request, Response $response, array $args): Response
+    public function delete(Request $request, Response $response): Response
     {
-        $this->users->delete((int) $args['id']);
+        $this->users->delete($request->getAttribute('user_id'));
 
         return JsonResponse::write($response, status: 204);
     }
