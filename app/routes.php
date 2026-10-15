@@ -45,7 +45,8 @@ return function (App $app) use ($authMiddleware, $lowerFilterMiddleware) {
         $group
             ->post('/send', [$controllerClass, 'send'])
             ->add($authMiddleware);
-        $group->post('/verify', [$controllerClass, 'verify']);
+        $group->post('/verify', [$controllerClass, 'verify'])
+            ->setName('email-verification.verify');
     });
 
     // password
@@ -58,7 +59,8 @@ return function (App $app) use ($authMiddleware, $lowerFilterMiddleware) {
         $group
             ->post('/forgot', [$controllerClass, 'forgot'])
             ->add($lowerFilterMiddleware);
-        $group->post('/reset', [$controllerClass, 'reset']);
+        $group->post('/reset', [$controllerClass, 'reset'])
+            ->setName('password.reset');
     });
 
     // users

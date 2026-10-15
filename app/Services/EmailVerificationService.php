@@ -14,6 +14,7 @@ use App\Validators\EmailVerificationValidator;
 use DI\Attribute\Inject;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
+use Slim\Interfaces\RouteParserInterface;
 use Throwable;
 
 class EmailVerificationService
@@ -35,6 +36,9 @@ class EmailVerificationService
 
     #[Inject]
     protected UserRepository $userRepository;
+
+    #[Inject]
+    protected RouteParserInterface $routeParser;
 
     protected function validatorClass(): string
     {
@@ -90,7 +94,7 @@ class EmailVerificationService
             throw $e;
         }
 
-        $url = rtrim($this->config->get('app.base_url'), '/') . '/auth/verify-email';
+        $url = rtrim($this->config->get('app.base_url'), '/') . $this->routeParser->urlFor('email-verification.verify');
 
         $message = $this->email
             ->compose()

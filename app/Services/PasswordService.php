@@ -15,6 +15,7 @@ use DateTimeImmutable;
 use DI\Attribute\Inject;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
+use Slim\Interfaces\RouteParserInterface;
 use Throwable;
 
 class PasswordService
@@ -36,6 +37,9 @@ class PasswordService
 
     #[Inject]
     protected UserRepository $userRepository;
+
+    #[Inject]
+    protected RouteParserInterface $routeParser;
 
     protected function validatorClass(): string
     {
@@ -64,7 +68,7 @@ class PasswordService
         try {
             $delete = $this->sql
                 ->delete('password_reset_tokens')
-                ->where(['id' => $user['id']]);
+                ->where(['user_id' => $user['id']]);
 
             $this->sql
                 ->prepareStatementForSqlObject($delete)
@@ -88,7 +92,7 @@ class PasswordService
             throw $e;
         }
 
-        $url = rtrim($this->config->get('app.base_url'), '/') . '/auth/reset-password';
+        $url = rtrim($this->config->get('app.base_url'), '/') . $this->routeParser->urlFor('password.reset');
 
         $message = $this->email
             ->compose()
