@@ -9,8 +9,7 @@ Requirements: PHP 8.3+, Composer, and Redis.
 ```sh
 composer install
 cp .env.dist .env
-composer db:fresh
-composer db:seed
+composer db:fresh && composer db:seed
 php -S localhost:8000 -t public
 ```
 
@@ -18,11 +17,13 @@ The local environment uses SQLite at `db/db-local.sqlite3`. Seeding replaces the
 
 ## Tests
 
-Run the test suite with Pest:
+Run the test suite with Composer. This prepares the testing database (migrations and seed data) before running Pest:
 
 ```sh
 composer test
 ```
+
+To run Pest without preparing the testing database, use `composer test:pest` after preparing it.
 
 ## Endpoints
 
@@ -34,7 +35,7 @@ composer test
 - `POST /password/change` with `{"current_password":"...","new_password":"...","new_password_repeat":"..."}` — authenticated
 - `POST /password/forgot` with `{"email":"user@example.com"}`
 - `POST /password/reset` with `{"token":"<token from email>","new_password":"...","new_password_repeat":"..."}`
-- `/users/{id}` — authenticated: `GET` to view, `POST` or `PATCH` to update, and `DELETE` to delete
+- `/user` — authenticated: `GET` to view your own account, `POST` or `PATCH` to update it, and `DELETE` to delete it
 
 Send the access token returned by login as a bearer token in the `Authorization` header for protected endpoints: `Authorization: Bearer <access_token>`.
 
