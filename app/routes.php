@@ -28,6 +28,9 @@ return function (App $app) use ($authMiddleware, $lowerFilterMiddleware) {
         $controllerClass = AuthController::class;
 
         $group
+            ->post('/register', [$controllerClass, 'register'])
+            ->add($lowerFilterMiddleware);
+        $group
             ->post('/login', [$controllerClass, 'login'])
             ->add($lowerFilterMiddleware);
         $group

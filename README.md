@@ -26,17 +26,19 @@ composer test
 
 ## Endpoints
 
+- `GET /health`
+- `POST /auth/register` with `{"email":"user@example.com","password":"...","first_name":"...","last_name":"..."}`
 - `POST /auth/login`, `POST /auth/logout`, `POST /auth/logout-all`
-- `POST /auth/change-password` with `{"current_password":"...","new_password":"...","new_password_repeat":"..."}`
-- `POST /auth/forgot-password` with `{"email":"user@example.com"}`
-- `POST /auth/reset-password` with `{"token":"<token from email>","new_password":"...","new_password_repeat":"..."}`
-- `POST /auth/verify-email` with `{"token":"<token from email>"}`
-- `POST /auth/resend-verification` with `{"email":"user@example.com"}`
-- `/users` — authenticated, permission-protected user CRUD
+- `POST /email-verification/send` — authenticated
+- `POST /email-verification/verify` with `{"token":"<token from email>"}`
+- `POST /password/change` with `{"current_password":"...","new_password":"...","new_password_repeat":"..."}` — authenticated
+- `POST /password/forgot` with `{"email":"user@example.com"}`
+- `POST /password/reset` with `{"token":"<token from email>","new_password":"...","new_password_repeat":"..."}`
+- `/users/{id}` — authenticated: `GET` to view, `POST` or `PATCH` to update, and `DELETE` to delete
 
 Use the access token returned by login as a Bearer token for protected endpoints.
 
-New users must verify their email before login. Verification tokens expire according to `EMAIL_VERIFICATION_TTL`; requesting a replacement token invalidates earlier tokens. Changing a user's email address requires verification again and revokes that user's existing access tokens. The resend endpoint returns `404` when the account does not exist and `422` when its email address is already verified.
+New users must verify their email before login. Verification tokens expire according to `EMAIL_VERIFICATION_TTL`; requesting a replacement token invalidates earlier tokens. Changing a user's email address requires verification again and revokes that user's existing access tokens. The email-verification send endpoint returns `404` when the account does not exist and `422` when its email address is already verified.
 Changing a password requires the current password, is limited to once every 24 hours, and revokes all of the user's existing access tokens.
 In production, password reset requests return the same response whether or not an account exists. Reset tokens expire according to `PASSWORD_RESET_TTL`, and requesting a replacement token invalidates earlier tokens. Resetting a password consumes the token and revokes all of the user's existing access tokens. In the local environment, the reset token is also included in the response when an account exists.
 

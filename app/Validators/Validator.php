@@ -50,7 +50,7 @@ abstract class Validator
      * @param array<string, mixed> $context
      * @return array<string, mixed>|false
      */
-    public function validate(array $data, string $scenario = 'create', array $context = []): array|false
+    public function validate(array $data, string $scenario, array $context = []): array|false
     {
         $rules = $this->rules($scenario, $context);
 
