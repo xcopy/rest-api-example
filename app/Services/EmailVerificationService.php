@@ -49,7 +49,7 @@ class EmailVerificationService
         $user = $this->userRepository->findOne(['email' => $data['email']]);
 
         if ($user === null) {
-            throw new NotFoundException('User with this email not found.');
+            throw new NotFoundException('User with this email not found');
         }
 
         if ($user['email_verified_at'] !== null) {

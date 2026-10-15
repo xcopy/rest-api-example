@@ -53,7 +53,7 @@ class PasswordService
         $user = $this->userRepository->findOne(compact('email'));
 
         if ($user === null) {
-            throw new NotFoundException();
+            throw new NotFoundException('User with this email not found');
         }
 
         $token = generateToken();
