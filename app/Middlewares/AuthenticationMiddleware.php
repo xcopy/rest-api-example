@@ -25,14 +25,14 @@ class AuthenticationMiddleware implements MiddlewareInterface
             throw new HttpUnauthorizedException($request);
         }
 
-        $token_hash = hashToken($matches[1]);
+        $tokenHash = hashToken($matches[1]);
 
         $select = $this->sql
             ->select('user_tokens')
             ->columns([])
             ->join('users', 'user_tokens.user_id = users.id', ['id', 'email'])
             ->where([
-                'user_tokens.token_hash' => $token_hash,
+                'user_tokens.token_hash' => $tokenHash,
                 'user_tokens.expires_at > ?' => now(true),
             ])
             ->limit(1);
@@ -50,7 +50,7 @@ class AuthenticationMiddleware implements MiddlewareInterface
             $request
                 ->withAttribute('user_id', $user['id'])
                 ->withAttribute('email', $user['email'])
-                ->withAttribute('token_hash', $token_hash)
+                ->withAttribute('token_hash', $tokenHash)
         );
     }
 }

@@ -55,8 +55,8 @@ class UserService
         $connection->beginTransaction();
 
         try {
-            if ($user_id = $repository->insert($data)) {
-                $user = $repository->findOne($user_id);
+            if ($userId = $repository->insert($data)) {
+                $user = $repository->findOne($userId);
             }
 
             if ($user === null) {
@@ -82,7 +82,7 @@ class UserService
                 ->insert('role_user')
                 ->values([
                     'role_id' => $role['id'],
-                    'user_id' => $user_id,
+                    'user_id' => $userId,
                 ]);
 
             $this->sql

@@ -56,7 +56,7 @@ class EmailVerificationService
             throw new ConflictException('Email address is already verified');
         }
 
-        $user_id = $user['id'];
+        $userId = $user['id'];
         $email = $user['email'];
         $token = generateToken();
         $expiresAt = now()->modify(config('email-verification.ttl'));
@@ -67,7 +67,7 @@ class EmailVerificationService
         try {
             $revokeEmailVerificationTokens = $this->sql
                 ->delete('email_verification_tokens')
-                ->where(compact('user_id'));
+                ->where(['user_id' => $userId]);
 
             $this->sql
                 ->prepareStatementForSqlObject($revokeEmailVerificationTokens)
@@ -76,7 +76,7 @@ class EmailVerificationService
             $insert = $this->sql
                 ->insert('email_verification_tokens')
                 ->values([
-                    'user_id' => $user_id,
+                    'user_id' => $userId,
                     'token_hash' => hashToken($token),
                     'expires_at' => $expiresAt->format(DATE_FORMAT_DB),
                 ]);

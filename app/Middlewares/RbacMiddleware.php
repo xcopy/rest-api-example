@@ -23,7 +23,7 @@ class RbacMiddleware implements MiddlewareInterface
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        if (!$user_id = $request->getAttribute('user_id')) {
+        if (!$userId = $request->getAttribute('user_id')) {
             throw new HttpUnauthorizedException($request);
         }
 
@@ -33,7 +33,7 @@ class RbacMiddleware implements MiddlewareInterface
             ->join('permission_role', 'permission_role.permission_id = permissions.id', [])
             ->join('role_user', 'role_user.role_id = permission_role.role_id', [])
             ->where([
-                'role_user.user_id' => $user_id,
+                'role_user.user_id' => $userId,
                 'permissions.name' => $this->permission,
             ])
             ->limit(1);

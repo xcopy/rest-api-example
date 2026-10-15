@@ -17,9 +17,9 @@ class PasswordController extends Controller
 
     public function change(Request $request, Response $response): Response
     {
-        $user_id = (int) $request->getAttribute('user_id');
+        $userId = (int) $request->getAttribute('user_id');
 
-        $this->password->change($user_id, $request->getParsedBody() ?? []);
+        $this->password->change($userId, $request->getParsedBody() ?? []);
 
         return JsonResponse::write($response, status: 204);
     }
