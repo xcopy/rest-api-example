@@ -13,7 +13,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 class PasswordController extends Controller
 {
     #[Inject]
-    protected PasswordService $password;
+    private PasswordService $password;
 
     public function change(Request $request, Response $response): Response
     {

@@ -13,7 +13,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 class UserController extends Controller
 {
     #[Inject]
-    protected UserService $users;
+    private UserService $users;
 
     /** @param array<string, string> $args */
     public function show(Request $request, Response $response, array $args): Response

@@ -15,7 +15,7 @@ use Slim\Psr7\Response;
 class CorsMiddleware implements MiddlewareInterface
 {
     #[Inject]
-    protected ConfigService $config;
+    private ConfigService $config;
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {

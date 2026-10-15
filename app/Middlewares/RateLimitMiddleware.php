@@ -18,10 +18,10 @@ use Slim\Exception\HttpTooManyRequestsException;
 class RateLimitMiddleware implements MiddlewareInterface
 {
     #[Inject]
-    protected ClientInterface $redis;
+    private ClientInterface $redis;
 
     #[Inject]
-    protected ConfigService $config;
+    private ConfigService $config;
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {

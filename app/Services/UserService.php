@@ -23,10 +23,10 @@ class UserService
     use ValidatesData;
 
     #[Inject]
-    protected Adapter $db;
+    private Adapter $db;
 
     #[Inject]
-    protected Sql $sql;
+    private Sql $sql;
 
     protected function repositoryClass(): string
     {

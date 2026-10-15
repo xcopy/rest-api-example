@@ -16,7 +16,7 @@ class AuthService
     use ValidatesData;
 
     #[Inject]
-    protected UserRepository $userRepository;
+    private UserRepository $userRepository;
 
     protected function validatorClass(): string
     {

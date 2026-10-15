@@ -13,7 +13,7 @@ use Slim\Exception\HttpUnauthorizedException;
 class UserPolicy
 {
     #[Inject]
-    protected Sql $sql;
+    private Sql $sql;
 
     public function assertCanList(ServerRequestInterface $request): void
     {

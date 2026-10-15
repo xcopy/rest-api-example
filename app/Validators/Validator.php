@@ -10,10 +10,10 @@ use Leaf\Form;
 abstract class Validator
 {
     #[Inject]
-    protected Form $form;
+    private Form $form;
 
     /** @var array<string, string|list<string>> */
-    protected array $errors = [];
+    private array $errors = [];
 
     /**
      * @param array<string, mixed> $context

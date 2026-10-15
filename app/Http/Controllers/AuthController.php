@@ -14,7 +14,7 @@ use Slim\Exception\HttpUnauthorizedException;
 class AuthController extends Controller
 {
     #[Inject]
-    protected AuthService $auth;
+    private AuthService $auth;
 
     public function login(Request $request, Response $response): Response
     {

@@ -12,10 +12,10 @@ use Symfony\Component\Mime\Email;
 class EmailService
 {
     #[Inject]
-    protected MailerInterface $mailer;
+    private MailerInterface $mailer;
 
     #[Inject]
-    protected ConfigService $config;
+    private ConfigService $config;
 
     public function compose(): Email
     {

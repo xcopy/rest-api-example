@@ -23,22 +23,22 @@ class EmailVerificationService
     use ValidatesData;
 
     #[Inject]
-    protected Adapter $db;
+    private Adapter $db;
 
     #[Inject]
-    protected Sql $sql;
+    private Sql $sql;
 
     #[Inject]
-    protected ConfigService $config;
+    private ConfigService $config;
 
     #[Inject]
-    protected EmailService $email;
+    private EmailService $email;
 
     #[Inject]
-    protected UserRepository $userRepository;
+    private UserRepository $userRepository;
 
     #[Inject]
-    protected RouteParserInterface $routeParser;
+    private RouteParserInterface $routeParser;
 
     protected function validatorClass(): string
     {

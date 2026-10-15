@@ -13,7 +13,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 class EmailVerificationController extends Controller
 {
     #[Inject]
-    protected EmailVerificationService $emailVerification;
+    private EmailVerificationService $emailVerification;
 
     public function send(Request $request, Response $response): Response
     {

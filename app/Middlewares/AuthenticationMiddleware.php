@@ -15,7 +15,7 @@ use Slim\Exception\HttpUnauthorizedException;
 class AuthenticationMiddleware implements MiddlewareInterface
 {
     #[Inject]
-    protected Sql $sql;
+    private Sql $sql;
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
