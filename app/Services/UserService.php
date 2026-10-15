@@ -7,7 +7,6 @@ namespace App\Services;
 use App\Concerns\HasFactory;
 use App\Exceptions\NotFoundException;
 use App\Repositories\UserRepository;
-use App\Services\Concerns\HasRepository;
 use App\Services\Concerns\ValidatesData;
 use App\Validators\UserValidator;
 use DI\Attribute\Inject;
@@ -19,7 +18,6 @@ use Throwable;
 final class UserService
 {
     use HasFactory;
-    use HasRepository;
     use ValidatesData;
 
     #[Inject]
@@ -28,10 +26,8 @@ final class UserService
     #[Inject]
     private Sql $sql;
 
-    protected function repositoryClass(): string
-    {
-        return UserRepository::class;
-    }
+    #[Inject]
+    private UserRepository $repository;
 
     protected function validatorClass(): string
     {
@@ -47,16 +43,14 @@ final class UserService
         $data = $this->validate($data, 'create');
         $data['password'] = hashPassword($data['password']);
 
-        $repository = $this->getRepository();
-
         $user = null;
 
         $connection = $this->db->getDriver()->getConnection();
         $connection->beginTransaction();
 
         try {
-            if ($userId = $repository->insert($data)) {
-                $user = $repository->findOne($userId);
+            if ($userId = $this->repository->insert($data)) {
+                $user = $this->repository->findOne($userId);
             }
 
             if ($user === null) {
@@ -105,14 +99,14 @@ final class UserService
 
         $data = $this->validate($data, 'update');
 
-        $this->getRepository()->update($data, compact('id'));
+        $this->repository->update($data, compact('id'));
     }
 
     public function delete(int $id): void
     {
         $this->findOne($id);
 
-        $this->getRepository()->delete(compact('id'));
+        $this->repository->delete(compact('id'));
     }
 
     /**
@@ -121,7 +115,7 @@ final class UserService
      */
     public function findOne(int|array $where): array
     {
-        $user = $this->getRepository()->findOne($where);
+        $user = $this->repository->findOne($where);
 
         if ($user === null) {
             throw new NotFoundException();
