@@ -6,7 +6,6 @@ use App\Mailer\FileTransport;
 use App\Services\ConfigService;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\Sql\Sql;
-use Leaf\Form;
 use Predis\Client;
 use Predis\ClientInterface;
 use Symfony\Component\Mailer\Mailer;
@@ -77,30 +76,5 @@ return [
         return new Client($parameters, [
             'prefix' => $config->get('redis.prefix'),
         ]);
-    },
-    Form::class => function (Sql $sql) {
-        $form = new Form();
-
-        $form->rule('unique', function ($value, $param, $field) use ($sql) {
-            $params = explode(',', $param);
-
-            $table = $params[0];
-            $currentUserId = $params[1] ?? null;
-
-            $select = $sql
-                ->select($table)
-                ->where([$field => $value])
-                ->limit(1);
-
-            if ($currentUserId !== null) {
-                $select->where(['id != ?' => $currentUserId]);
-            }
-
-            $results = $sql->prepareStatementForSqlObject($select)->execute();
-
-            return $results->count() === 0;
-        }, 'The value for the field {field} is already taken');
-
-        return $form;
     },
 ];
