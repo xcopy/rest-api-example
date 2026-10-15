@@ -13,10 +13,34 @@ abstract class Repository
     #[Inject]
     protected Sql $sql;
 
+    /** @var list<string> */
+    private array $additionalColumns = [];
+
     abstract protected function getTable(): string;
 
     /** @return array<string> */
     abstract protected function getColumns(): array;
+
+    /** @param list<string> $columns */
+    public function addColumns(array $columns): static
+    {
+        $repository = clone $this;
+        $repository->additionalColumns = array_values(array_unique([
+            ...$this->additionalColumns,
+            ...$columns,
+        ]));
+
+        return $repository;
+    }
+
+    /** @return list<string> */
+    private function columns(): array
+    {
+        return array_values(array_unique([
+            ...$this->getColumns(),
+            ...$this->additionalColumns,
+        ]));
+    }
 
     /** @param array<string, mixed> $where
      *  @return list<array<string, mixed>>
@@ -25,7 +49,7 @@ abstract class Repository
     {
         $select = $this->sql
             ->select($this->getTable())
-            ->columns($this->getColumns());
+            ->columns($this->columns());
 
         if ($where !== []) {
             $select->where($where);
@@ -54,7 +78,7 @@ abstract class Repository
 
         $select = $this->sql
             ->select($this->getTable())
-            ->columns($this->getColumns())
+            ->columns($this->columns())
             ->where($where)
             ->limit(1);
 
