@@ -10,7 +10,7 @@ use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
-class UserController extends Controller
+final class UserController extends Controller
 {
     #[Inject]
     private UserService $users;

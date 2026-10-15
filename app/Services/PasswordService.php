@@ -19,7 +19,7 @@ use Laminas\Db\Adapter\Adapter;
 use Slim\Interfaces\RouteParserInterface;
 use Throwable;
 
-class PasswordService
+final class PasswordService
 {
     use HasFactory;
     use ValidatesData;

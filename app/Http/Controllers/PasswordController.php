@@ -10,7 +10,7 @@ use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
-class PasswordController extends Controller
+final class PasswordController extends Controller
 {
     #[Inject]
     private PasswordService $password;

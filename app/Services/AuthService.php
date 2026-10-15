@@ -10,7 +10,7 @@ use App\Services\Concerns\ValidatesData;
 use App\Validators\AuthValidator;
 use DI\Attribute\Inject;
 
-class AuthService
+final class AuthService
 {
     use HasFactory;
     use ValidatesData;

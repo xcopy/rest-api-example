@@ -7,7 +7,7 @@ error_reporting(E_ALL & ~E_DEPRECATED);
 // use Faker\Factory;
 use Phinx\Seed\AbstractSeed;
 
-class UserSeeder extends AbstractSeed
+final class UserSeeder extends AbstractSeed
 {
     public function run(): void
     {

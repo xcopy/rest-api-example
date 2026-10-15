@@ -6,7 +6,7 @@ namespace App\Validators;
 
 use InvalidArgumentException;
 
-class PasswordValidator extends Validator
+final class PasswordValidator extends Validator
 {
     /**
      * @inheritDoc

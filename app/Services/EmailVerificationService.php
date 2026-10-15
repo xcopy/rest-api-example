@@ -17,7 +17,7 @@ use Laminas\Db\Adapter\Adapter;
 use Slim\Interfaces\RouteParserInterface;
 use Throwable;
 
-class EmailVerificationService
+final class EmailVerificationService
 {
     use HasFactory;
     use ValidatesData;

@@ -16,7 +16,7 @@ use Laminas\Db\Sql\Sql;
 use RuntimeException;
 use Throwable;
 
-class UserService
+final class UserService
 {
     use HasFactory;
     use HasRepository;

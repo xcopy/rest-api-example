@@ -6,7 +6,7 @@ namespace App\Validators;
 
 use InvalidArgumentException;
 
-class EmailVerificationValidator extends Validator
+final class EmailVerificationValidator extends Validator
 {
     /**
      * @inheritDoc

@@ -12,7 +12,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Exception\HttpUnauthorizedException;
 
-class AuthenticationMiddleware implements MiddlewareInterface
+final class AuthenticationMiddleware implements MiddlewareInterface
 {
     #[Inject]
     private Sql $sql;

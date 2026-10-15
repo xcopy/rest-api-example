@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-class UnprocessableEntityException extends ServiceException
+final class UnprocessableEntityException extends ServiceException
 {
     /** @param array<string, string> $errors */
     public function __construct(private array $errors)

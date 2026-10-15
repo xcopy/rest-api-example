@@ -12,7 +12,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Exception\HttpForbiddenException;
 use Slim\Exception\HttpUnauthorizedException;
 
-class RbacMiddleware implements MiddlewareInterface
+final class RbacMiddleware implements MiddlewareInterface
 {
     private Sql $sql;
 

@@ -12,7 +12,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpUnauthorizedException;
 
-class AuthController extends Controller
+final class AuthController extends Controller
 {
     #[Inject]
     private AuthService $auth;

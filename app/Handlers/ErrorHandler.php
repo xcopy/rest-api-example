@@ -8,7 +8,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpException;
 
-class ErrorHandler extends \Slim\Handlers\ErrorHandler
+final class ErrorHandler extends \Slim\Handlers\ErrorHandler
 {
     private const ATTRIBUTE = 'exception_headers';
 

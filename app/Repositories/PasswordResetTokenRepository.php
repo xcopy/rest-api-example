@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories;
 
-class PasswordResetTokenRepository extends Repository
+final class PasswordResetTokenRepository extends Repository
 {
     protected function getTable(): string
     {

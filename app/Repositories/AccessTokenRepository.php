@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories;
 
-class AccessTokenRepository extends Repository
+final class AccessTokenRepository extends Repository
 {
     protected function getTable(): string
     {

@@ -10,7 +10,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use stdClass;
 
-class TrimInputMiddleware implements MiddlewareInterface
+final class TrimInputMiddleware implements MiddlewareInterface
 {
     /** @var array<string, bool> */
     private array $except;

@@ -10,7 +10,7 @@ use DI\Attribute\Inject;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
-class EmailVerificationController extends Controller
+final class EmailVerificationController extends Controller
 {
     #[Inject]
     private EmailVerificationService $emailVerification;

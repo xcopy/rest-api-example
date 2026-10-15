@@ -6,7 +6,7 @@ namespace App\Http;
 
 use Psr\Http\Message\ResponseInterface as Response;
 
-class JsonResponse
+final class JsonResponse
 {
     public static function write(Response $response, mixed $data = null, int $status = 200): Response
     {

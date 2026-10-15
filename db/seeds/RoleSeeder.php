@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Phinx\Seed\AbstractSeed;
 
-class RoleSeeder extends AbstractSeed
+final class RoleSeeder extends AbstractSeed
 {
     public function run(): void
     {

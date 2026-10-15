@@ -14,7 +14,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use RuntimeException;
 use Slim\Exception\HttpTooManyRequestsException;
 
-class RateLimitMiddleware implements MiddlewareInterface
+final class RateLimitMiddleware implements MiddlewareInterface
 {
     #[Inject]
     private ClientInterface $redis;
